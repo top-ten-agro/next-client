@@ -1,9 +1,6 @@
-import { useSession } from "next-auth/react";
 import Head from "next/head";
 
 const Home = () => {
-  const { data: session } = useSession();
-
   return (
     <>
       <Head>
