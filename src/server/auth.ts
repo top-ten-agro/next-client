@@ -112,6 +112,9 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   secret: env.NEXTAUTH_SECRET,
+  theme: {
+    colorScheme: "light",
+  },
 };
 
 export const getServerAuthSession = (ctx: {
