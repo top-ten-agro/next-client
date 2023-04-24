@@ -9,7 +9,11 @@ import { DefaultLayout } from "@/layouts/DefaultLayout";
 import "@/styles/globals.css";
 
 const queryClient = new QueryClient();
-const theme = createTheme({});
+const lightTheme = createTheme({
+  components: {
+    MuiCard: { defaultProps: { variant: "outlined" } },
+  },
+});
 
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
@@ -18,7 +22,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
   return (
     <SessionProvider session={session} refetchInterval={300}>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider theme={theme}>
+        <ThemeProvider theme={lightTheme}>
           <CssBaseline />
           <DefaultLayout>
             <Component {...pageProps} />

@@ -1,4 +1,5 @@
-"use client";
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+
 import { axiosAuth } from "../axios";
 import { useSession } from "next-auth/react";
 import { useEffect } from "react";
@@ -10,9 +11,7 @@ const useAxiosAuth = () => {
     const requestIntercept = axiosAuth.interceptors.request.use(
       (config) => {
         if (!config.headers["Authorization"]) {
-          config.headers["Authorization"] = session
-            ? `Bearer ${session.accessToken}`
-            : null;
+          config.headers["Authorization"] = `Bearer ${session?.accessToken}`;
         }
         return config;
       },
@@ -22,7 +21,7 @@ const useAxiosAuth = () => {
     return () => {
       axiosAuth.interceptors.request.eject(requestIntercept);
     };
-  }, [session]);
+  }, [session?.accessToken]);
 
   return axiosAuth;
 };

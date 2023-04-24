@@ -1,5 +1,5 @@
 import axios from "axios";
-import { env } from "process";
+import { env } from "@/env.mjs";
 
 export default axios.create({
   baseURL: env.NEXT_PUBLIC_API_URL,
