@@ -42,6 +42,15 @@ const Stores = () => {
         {isLoading ? <LinearProgress /> : null}
         {storesRes ? (
           <Grid container spacing={2}>
+            {storesRes.count === 0 ? (
+              <Grid xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography>No stores available</Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ) : null}
             {storesRes.results.map((store) => (
               <Grid key={store.id} xs={12} sm={6} md={4}>
                 <Card>

@@ -7,7 +7,7 @@ type BreadcrumbItem = { name: string; path?: string };
 
 const MuiBreadcrumbs = ({ items }: { items: BreadcrumbItem[] }) => {
   return (
-    <Breadcrumbs aria-label="breadcrumb">
+    <Breadcrumbs maxItems={3} aria-label="breadcrumb">
       <Link underline="hover" color="inherit" component={NextLink} href="/">
         Home
       </Link>

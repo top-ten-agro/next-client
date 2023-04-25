@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction, ReactNode } from "react";
 import NextLink from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import Drawer from "@mui/material/Drawer";
+import Divider from "@mui/material/Divider";
 import { styled } from "@mui/material/styles";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
@@ -23,6 +24,10 @@ import StoreIcon from "@mui/icons-material/Store";
 import HomeIcon from "@mui/icons-material/Home";
 import ReceiptIcon from "@mui/icons-material/Receipt";
 import MoneyIcon from "@mui/icons-material/Money";
+import CategoryIcon from "@mui/icons-material/Category";
+import PeopleIcon from "@mui/icons-material/People";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import LogoutIcon from "@mui/icons-material/Logout";
 import CloseIcon from "@mui/icons-material/Close";
 
 const DrawerHeader = styled("div")(({ theme }) => ({
@@ -37,6 +42,8 @@ const DrawerHeader = styled("div")(({ theme }) => ({
 const routes = [
   { path: "/", name: "Home", icon: <HomeIcon /> },
   { path: "/stores", name: "Stores", icon: <StoreIcon /> },
+  { path: "/products", name: "Products", icon: <CategoryIcon /> },
+  { path: "/customers", name: "Customers", icon: <PeopleIcon /> },
   { path: "/orders", name: "Orders", icon: <ReceiptIcon /> },
   { path: "/transactions", name: "Transactions", icon: <MoneyIcon /> },
 ];
@@ -134,6 +141,23 @@ const AppDrawer = ({
               </ListItemButton>
             </ListItem>
           ))}
+          <Divider />
+          <ListItem disablePadding>
+            <ListItemButton component={NextLink} href="/account">
+              <ListItemIcon>
+                <AccountCircleIcon />
+              </ListItemIcon>
+              <ListItemText>User Account</ListItemText>
+            </ListItemButton>
+          </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton component={NextLink} href="/api/auth/signout">
+              <ListItemIcon>
+                <LogoutIcon sx={{ transform: "rotate(180deg)" }} />
+              </ListItemIcon>
+              <ListItemText>Sign Out</ListItemText>
+            </ListItemButton>
+          </ListItem>
         </List>
       </Box>
     </Drawer>
