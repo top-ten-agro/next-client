@@ -1,3 +1,11 @@
+export type Employee = {
+  user: number;
+  name: string;
+  designation: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Store = {
   id: number;
   name: string;

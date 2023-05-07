@@ -111,6 +111,9 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+  pages: {
+    signIn: "/signin",
+  },
   secret: env.NEXTAUTH_SECRET,
   theme: {
     colorScheme: "light",

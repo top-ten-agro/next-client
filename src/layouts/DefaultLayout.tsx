@@ -15,6 +15,7 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useRouter } from "next/router";
 
@@ -51,15 +52,29 @@ const routes = [
 const drawerWidth = 240;
 
 export const DefaultLayout = ({ children }: { children: ReactNode }) => {
-  const { data: session } = useSession({ required: true });
+  const { data: session, status } = useSession({ required: true });
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width:1280px)");
 
   useEffect(() => {
-    if (!!session?.error) {
+    if (session?.error === "RefreshTokenError") {
       void signOut({ callbackUrl: "/", redirect: true });
     }
-  }, [session]);
+  }, [session, status]);
+  useEffect(() => {
+    if (!isDesktop) {
+      setIsOpen(false);
+    }
+  }, [router.asPath, isDesktop]);
+
+  if (status === "loading") {
+    return (
+      <Box sx={{ height: "100vh", display: "grid", placeItems: "center" }}>
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: "flex" }}>

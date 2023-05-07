@@ -16,6 +16,12 @@ const queryClient = new QueryClient();
 const lightTheme = createTheme({
   components: {
     MuiCard: { defaultProps: { variant: "outlined" } },
+    MuiTextField: {
+      defaultProps: { fullWidth: true, variant: "outlined" },
+    },
+    MuiButton: {
+      defaultProps: { variant: "contained", disableElevation: true },
+    },
   },
 });
 
