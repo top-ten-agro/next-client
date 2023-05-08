@@ -24,7 +24,12 @@ const fetchStores = async (axios: AxiosInstance) => {
 
 const Stores = () => {
   const axios = useAxiosAuth();
-  const { data: storesRes, isLoading } = useQuery({
+  const {
+    data: storesRes,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["stores"],
     queryFn: () => fetchStores(axios),
   });
@@ -40,6 +45,11 @@ const Stores = () => {
           Stores
         </Typography>
         {isLoading ? <LinearProgress /> : null}
+        {isError ? (
+          <Typography color={"error"}>
+            {error instanceof Error ? error.message : "An error occured."}
+          </Typography>
+        ) : null}
         {storesRes ? (
           <Grid container spacing={2}>
             {storesRes.count === 0 ? (

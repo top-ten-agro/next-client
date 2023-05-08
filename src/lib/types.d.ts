@@ -1,10 +1,4 @@
-export type Employee = {
-  user: number;
-  name: string;
-  designation: string;
-  created_at: string;
-  updated_at: string;
-};
+import { User } from "next-auth";
 
 export type Store = {
   id: number;
@@ -20,3 +14,46 @@ export type ListResponse<T extends Record<string, unknown>> = {
   previous: number | null;
   results: Array<T>;
 };
+
+export type Product = {
+  id: number;
+  name: string;
+  group_name: string;
+  price: string;
+  published: boolean;
+  archived: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Stock = {
+  id: number;
+  product: Product;
+  store: number;
+  quantity: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Role = {
+  id: number;
+  role: "MANAGER" | "DIRECTOR" | "OFFICER";
+  store: number;
+  user: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ReStock = {
+  id: number;
+  store: number;
+  approved: boolean;
+  created_by: number | Pick<User, "id" | "email">;
+  created_at: string;
+  updated_at: string;
+};
+
+type Prettify<T> = {
+  [K in keyof T]: T[K];
+  // eslint-disable-next-line @typescript-eslint/ban-types
+} & {};

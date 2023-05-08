@@ -47,6 +47,14 @@ const RegisterUser: NextPageWithLayout = () => {
 
   const { control, formState, handleSubmit } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
+    defaultValues: {
+      email: "",
+      first_name: "",
+      last_name: "",
+      phone: "",
+      password: "",
+      confirm: "",
+    },
   });
   const { mutate: registeruser, isLoading } = useMutation({
     mutationKey: ["register"],

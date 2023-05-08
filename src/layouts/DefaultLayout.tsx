@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import type { Dispatch, SetStateAction, ReactNode } from "react";
+import { useRouter } from "next/router";
 import NextLink from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { signOut, useSession } from "next-auth/react";
+import { styled } from "@mui/material/styles";
 import Drawer from "@mui/material/Drawer";
 import Divider from "@mui/material/Divider";
-import { styled } from "@mui/material/styles";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
@@ -17,7 +18,8 @@ import ListItemText from "@mui/material/ListItemText";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { useRouter } from "next/router";
+import type { Dispatch, SetStateAction, ReactNode } from "react";
+import type { ListResponse, Role } from "@/lib/types";
 
 //icons
 import MenuIcon from "@mui/icons-material/Menu";
@@ -30,6 +32,8 @@ import PeopleIcon from "@mui/icons-material/People";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/Logout";
 import CloseIcon from "@mui/icons-material/Close";
+import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
+import { useRoleStore } from "@/lib/store/roles";
 
 const DrawerHeader = styled("div")(({ theme }) => ({
   display: "flex",
@@ -54,8 +58,20 @@ const drawerWidth = 240;
 export const DefaultLayout = ({ children }: { children: ReactNode }) => {
   const { data: session, status } = useSession({ required: true });
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
+  const axios = useAxiosAuth();
   const isDesktop = useMediaQuery("(min-width:1280px)");
+  const setRoles = useRoleStore((state) => state.setRoles);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useQuery({
+    queryKey: ["roles", session?.user.id],
+    queryFn: async () => {
+      const { data } = await axios.get<ListResponse<Role>>("api/roles/");
+      return data.results;
+    },
+    enabled: status === "authenticated",
+    onSuccess: (data) => setRoles(data),
+  });
 
   useEffect(() => {
     if (session?.error === "RefreshTokenError") {

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import Head from "next/head";
-import Router from "next/router";
+import Router, { useRouter } from "next/router";
 import NextLink from "next/link";
 import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
@@ -17,6 +17,7 @@ import TextField from "@mui/material/TextField";
 import LinearProgress from "@mui/material/LinearProgress";
 import AuthLayout from "@/layouts/AuthLayout";
 import type { NextPageWithLayout } from "./_app";
+import { toast } from "react-toastify";
 
 const schema = z.object({
   email: z
@@ -27,9 +28,14 @@ const schema = z.object({
 
 const SignIn: NextPageWithLayout = () => {
   const { status } = useSession();
+  const router = useRouter();
 
   const { control, formState, handleSubmit } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
   const { mutate: signinUser, isLoading } = useMutation({
     mutationKey: ["signin"],
@@ -61,6 +67,11 @@ const SignIn: NextPageWithLayout = () => {
           <Typography fontSize={24} fontWeight={"bold"} mb={2}>
             Employee Sign In
           </Typography>
+          {router.query.error === "CredentialsSignin" ? (
+            <Typography color={"error"}>
+              Could not find an active account with your email and password.
+            </Typography>
+          ) : null}
           {status === "loading" ? <LinearProgress /> : null}
           {status === "unauthenticated" ? (
             <Box
@@ -108,7 +119,7 @@ const SignIn: NextPageWithLayout = () => {
                     type="submit"
                     loading={isLoading}
                   >
-                    Register
+                    Sign In
                   </LoadingButton>
                 </Grid>
               </Grid>
