@@ -246,6 +246,7 @@ const RestockPage = () => {
                             options={products}
                             onChange={(_, data) => onChange(data?.id)}
                             getOptionLabel={(option) => option.name}
+                            groupBy={(option) => option.group_name}
                             renderInput={(params) => (
                               <TextField
                                 {...params}
