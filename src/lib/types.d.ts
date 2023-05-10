@@ -48,9 +48,10 @@ export type ReStock = {
   id: number;
   store: number;
   approved: boolean;
-  created_by: number | Pick<User, "id" | "email">;
+  created_by: Pick<User, "id" | "email">;
   created_at: string;
   updated_at: string;
+  items?: Array<{ product: number; quantity: number }>;
 };
 
 type Prettify<T> = {
