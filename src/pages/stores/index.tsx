@@ -1,7 +1,6 @@
 import Head from "next/head";
 import NextLink from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import MuiBreadcrumbs from "@/components/MuiBreadcrumbs";
 import Typography from "@mui/material/Typography";
 import Card from "@mui/material/Card";
 import CardActionArea from "@mui/material/CardActionArea";
@@ -10,6 +9,7 @@ import Grid from "@mui/material/Unstable_Grid2";
 import Container from "@mui/material/Container";
 import LinearProgress from "@mui/material/LinearProgress";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
+import PageToolbar from "@/components/PageToolbar";
 import type { AxiosInstance } from "axios";
 import type { ListResponse, Store } from "@/lib/types";
 
@@ -40,10 +40,12 @@ const Stores = () => {
         <title>Stores | Top Ten</title>
       </Head>
       <Container sx={{ mt: 2 }}>
-        <MuiBreadcrumbs items={[{ name: "Stores" }]} />
-        <Typography fontSize={36} fontWeight={"bold"} mb={2}>
-          Stores
-        </Typography>
+        <PageToolbar
+          backHref="/"
+          heading="Stores"
+          breadcrumbItems={[{ name: "Stores" }]}
+        />
+
         {isLoading ? <LinearProgress /> : null}
         {isError ? (
           <Typography color={"error"}>

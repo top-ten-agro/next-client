@@ -14,6 +14,9 @@ import "@/styles/globals.css";
 
 const queryClient = new QueryClient();
 const lightTheme = createTheme({
+  palette: {
+    primary: { main: "#548070" },
+  },
   components: {
     MuiCard: { defaultProps: { variant: "outlined" } },
     MuiTextField: {

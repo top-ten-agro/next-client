@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import NextLink from "next/link";
-import { useQuery } from "@tanstack/react-query";
 import { signOut, useSession } from "next-auth/react";
 import { styled } from "@mui/material/styles";
 import Drawer from "@mui/material/Drawer";
@@ -18,8 +17,8 @@ import ListItemText from "@mui/material/ListItemText";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import StoresContext from "@/components/StoresContext";
 import type { Dispatch, SetStateAction, ReactNode } from "react";
-import type { ListResponse, Role } from "@/lib/types";
 
 //icons
 import MenuIcon from "@mui/icons-material/Menu";
@@ -32,8 +31,6 @@ import PeopleIcon from "@mui/icons-material/People";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/Logout";
 import CloseIcon from "@mui/icons-material/Close";
-import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { useRoleStore } from "@/lib/store/roles";
 
 const DrawerHeader = styled("div")(({ theme }) => ({
   display: "flex",
@@ -58,20 +55,8 @@ const drawerWidth = 240;
 export const DefaultLayout = ({ children }: { children: ReactNode }) => {
   const { data: session, status } = useSession({ required: true });
   const router = useRouter();
-  const axios = useAxiosAuth();
   const isDesktop = useMediaQuery("(min-width:1280px)");
-  const setRoles = useRoleStore((state) => state.setRoles);
   const [isOpen, setIsOpen] = useState(false);
-
-  useQuery({
-    queryKey: ["roles", session?.user.id],
-    queryFn: async () => {
-      const { data } = await axios.get<ListResponse<Role>>("api/roles/");
-      return data.results;
-    },
-    enabled: status === "authenticated",
-    onSuccess: (data) => setRoles(data),
-  });
 
   useEffect(() => {
     if (session?.error === "RefreshTokenError") {
@@ -122,7 +107,7 @@ export const DefaultLayout = ({ children }: { children: ReactNode }) => {
       />
       <Box sx={{ flexGrow: 1, bgcolor: "background.default" }}>
         <Toolbar />
-        {children}
+        <StoresContext>{children}</StoresContext>
       </Box>
     </Box>
   );
@@ -137,6 +122,7 @@ const AppDrawer = ({
   setIsOpen: Dispatch<SetStateAction<boolean>>;
   type: "temporary" | "permanent";
 }) => {
+  const { data: session } = useSession();
   const router = useRouter();
   return (
     <Drawer
@@ -167,7 +153,7 @@ const AppDrawer = ({
                 href={item.path}
                 selected={router.route === item.path}
               >
-                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
                 <ListItemText>{item.name}</ListItemText>
               </ListItemButton>
             </ListItem>
@@ -175,15 +161,18 @@ const AppDrawer = ({
           <Divider />
           <ListItem disablePadding>
             <ListItemButton component={NextLink} href="/account">
-              <ListItemIcon>
+              <ListItemIcon sx={{ minWidth: 40 }}>
                 <AccountCircleIcon />
               </ListItemIcon>
-              <ListItemText>User Account</ListItemText>
+              <ListItemText
+                primary="User Account"
+                secondary={session?.user.email}
+              />
             </ListItemButton>
           </ListItem>
           <ListItem disablePadding>
             <ListItemButton component={NextLink} href="/api/auth/signout">
-              <ListItemIcon>
+              <ListItemIcon sx={{ minWidth: 40 }}>
                 <LogoutIcon sx={{ transform: "rotate(180deg)" }} />
               </ListItemIcon>
               <ListItemText>Sign Out</ListItemText>

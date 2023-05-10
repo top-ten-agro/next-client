@@ -2,8 +2,6 @@ import Head from "next/head";
 import NextLink from "next/link";
 import { useRouter } from "next/router";
 import { useQuery } from "@tanstack/react-query";
-import MuiBreadcrumbs from "@/components/MuiBreadcrumbs";
-import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Unstable_Grid2";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
@@ -18,12 +16,15 @@ import ReceiptIcon from "@mui/icons-material/Receipt";
 import MoneyIcon from "@mui/icons-material/Money";
 import CategoryIcon from "@mui/icons-material/Category";
 import PeopleIcon from "@mui/icons-material/People";
+import PostAddIcon from "@mui/icons-material/PostAdd";
 
 import type { AxiosInstance } from "axios";
 import type { Store } from "@/lib/types";
+import PageToolbar from "@/components/PageToolbar";
 
 const routes = [
   { name: "Product Stock", path: "stock", icon: <CategoryIcon /> },
+  { name: "Re-Stock", path: "restocks", icon: <PostAddIcon /> },
   { name: "Customers", path: "customers", icon: <PeopleIcon /> },
   { name: "Orders", path: "orders", icon: <ReceiptIcon /> },
   { name: "Transactions", path: "transactions", icon: <MoneyIcon /> },
@@ -56,15 +57,15 @@ const StorePage = () => {
         <meta name="description" content={store?.address} />
       </Head>
       <Container sx={{ mt: 2 }}>
-        <MuiBreadcrumbs
-          items={[
+        <PageToolbar
+          backHref="/stores"
+          heading={isLoading ? "loading..." : store?.name ?? "Store"}
+          breadcrumbItems={[
             { name: "Stores", path: "/stores" },
             { name: store ? store.name : isLoading ? "loading..." : "" },
           ]}
         />
-        <Typography fontSize={36} fontWeight={"bold"} mb={2}>
-          {isLoading ? "loading..." : store?.name}
-        </Typography>
+
         {isLoading ? <LinearProgress /> : null}
         {store ? (
           <Grid container spacing={2}>
