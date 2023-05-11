@@ -1,4 +1,4 @@
-import { User } from "next-auth";
+import type { User } from "next-auth";
 
 export type Store = {
   id: number;
@@ -59,6 +59,7 @@ export type Customer = {
   name: string;
   phone: string;
   created_at: string;
+  updated_at: string;
   address: string;
 };
 
@@ -68,6 +69,24 @@ export type Balance = {
   revenue: string;
   customer: number;
   store: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CustomerBalance = Prettify<
+  Omit<Balance, "customer"> & { customer: Customer }
+>;
+
+export type Order = {
+  id: number;
+  amount: string;
+  approved: boolean;
+  store: number;
+  customer: Prettify<Pick<Customer, "id" | "name">>;
+  items: Array<{ product: number; quantity: number; rate: string }>;
+  created_at: string;
+  updated_at: string;
+  created_by: Prettify<Pick<User, "id" | "email">>;
 };
 
 type Prettify<T> = {

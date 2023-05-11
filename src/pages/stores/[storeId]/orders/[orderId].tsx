@@ -1,11 +1,14 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Head from "next/head";
+import NextLink from "next/link";
 import { useRouter } from "next/router";
+import dayjs from "dayjs";
 import { z } from "zod";
 import { toast } from "react-toastify";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, Controller } from "react-hook-form";
+import { AxiosError } from "axios";
 import LoadingButton from "@mui/lab/LoadingButton";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
@@ -24,22 +27,22 @@ import Paper from "@mui/material/Paper";
 import IconButton from "@mui/material/IconButton";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PageToolbar from "@/components/PageToolbar";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
-import type { ListResponse, Product, ReStock } from "@/lib/types";
-import dayjs from "dayjs";
 import Typography from "@mui/material/Typography";
-import { AxiosError } from "axios";
+import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
+import type { ListResponse, Product, Order } from "@/lib/types";
 
 const schema = z.object({
   product: z.number().int(),
   quantity: z.number().int().min(1),
+  rate: z.number().min(0),
 });
 
-const RestockPage = () => {
+const OrderPage = () => {
   const router = useRouter();
   const axios = useAxiosAuth();
   const store = useCurrentStore((state) => state.store);
@@ -51,39 +54,44 @@ const RestockPage = () => {
     control,
     formState: { errors },
     reset,
+    setValue,
     handleSubmit,
   } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { quantity: 1 },
+    defaultValues: { quantity: 1, rate: 0 },
   });
   const { data: products, isFetching } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", router.query.storeId],
     queryFn: async () => {
-      const { data } = await axios.get<ListResponse<Product>>("api/products/");
+      const { data } = await axios.get<ListResponse<Product>>(
+        `api/products/?stores=${router.query.storeId as string}`
+      );
       return data.results;
     },
     initialData: [] as Product[],
   });
 
   const {
-    data: restock,
+    data: order,
     isLoading,
-    refetch: refetchRestock,
+    refetch: refetchOrder,
   } = useQuery({
-    queryKey: ["restock", "fetch-restock", router.query.restockId],
+    queryKey: ["order", "fetch-order", router.query.orderId],
     queryFn: async () => {
-      if (typeof router.query.restockId !== "string") {
+      if (typeof router.query.orderId !== "string") {
         return undefined;
       }
-      const { data } = await axios.get<ReStock>(
-        `api/restocks/${router.query.restockId}/?expand=created_by`
+      const { data } = await axios.get<Order>(
+        `api/orders/${router.query.orderId}/?expand=created_by,customer`
       );
       return data;
     },
     onSuccess: (data) => {
       if (!data) return;
       if (data.items) {
-        setSelectedProducts([...data.items]);
+        setSelectedProducts([
+          ...data.items.map((item) => ({ ...item, rate: Number(item.rate) })),
+        ]);
       }
     },
     onError: (error) => {
@@ -92,46 +100,48 @@ const RestockPage = () => {
       }
     },
   });
-  const { mutate: updateRestock, isLoading: isUpdatingStock } = useMutation({
-    mutationKey: ["restock", "update-restock", store?.id],
+  const { mutate: updateOrder, isLoading: isUpdatingStock } = useMutation({
+    mutationKey: ["order", "update-order", store?.id],
     mutationFn: async () => {
-      if (!restock) return;
-      if (restock.approved) {
-        throw new Error("Approved Restock cannot be updatetd.");
+      if (!order) return;
+      if (order.approved) {
+        throw new Error("Approved Order cannot be updatetd.");
       }
       if (!selectedProducts.length) {
         throw new Error("No product selected.");
       }
-      const res = await axios.put(`api/restocks/${restock.id}/`, {
+      const res = await axios.put(`api/orders/${order.id}/`, {
         items: selectedProducts,
-        store: restock.store,
+        store: order.store,
+        customer: order.customer.id,
+        amount: order.amount,
       });
-      return res.data as ReStock;
+      return res.data as Order;
     },
     onSuccess: (data) => {
       if (!data) return;
-      void refetchRestock();
+      void refetchOrder();
       toast.success("Update successful.");
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to create.");
+      toast.error(error instanceof Error ? error.message : "Failed to update.");
     },
   });
-  const { mutate: deleteRestock, isLoading: isDeletingRestock } = useMutation({
-    mutationKey: ["delete-restock", restock?.id],
+  const { mutate: deleteOrder, isLoading: isDeletingOrder } = useMutation({
+    mutationKey: ["delete-order", order?.id],
     mutationFn: async () => {
-      if (!restock) {
-        throw new Error("Restock object not found.");
+      if (!order) {
+        throw new Error("Order object not found.");
       }
-      const confirmed = confirm(`Delete Restock #${restock.id}?`);
+      const confirmed = confirm(`Delete Order #${order.id}?`);
       if (!confirmed) {
         throw new Error("Process cancelled.");
       }
-      await axios.delete(`api/restocks/${restock.id}/remove/`);
+      await axios.delete(`api/orders/${order.id}/remove/`);
     },
     onSuccess: () => {
       void router.push({
-        pathname: "/stores/[storeId]/restocks",
+        pathname: "/stores/[storeId]/orders",
         query: { ...router.query },
       });
     },
@@ -139,21 +149,21 @@ const RestockPage = () => {
       toast.error(error instanceof Error ? error.message : "Failed to create.");
     },
   });
-  const { mutate: approveRestock, isLoading: isApproving } = useMutation({
-    mutationKey: ["restock", "approve-restock", restock?.id],
+  const { mutate: approveOrder, isLoading: isApproving } = useMutation({
+    mutationKey: ["order", "approve-order", order?.id],
     mutationFn: async () => {
-      if (!restock) {
-        throw new Error("Restock object not found.");
+      if (!order) {
+        throw new Error("Order object not found.");
       }
-      const confirmed = confirm(`Approve Restock #${restock.id}?`);
+      const confirmed = confirm(`Approve Order #${order.id}?`);
       if (!confirmed) {
         throw new Error("Process cancelled.");
       }
-      await axios.put(`api/restocks/${restock.id}/approve/`);
+      await axios.put(`api/orders/${order.id}/approve/`);
     },
     onSuccess: () => {
-      toast.success("Restock approved.");
-      void refetchRestock();
+      toast.success("Order approved.");
+      void refetchOrder();
     },
     onError: (error) => {
       toast.error(
@@ -165,17 +175,17 @@ const RestockPage = () => {
   const permissions = useMemo(
     () => ({
       canUpdate:
-        restock?.approved === false &&
-        (role?.role === "DIRECTOR" ||
-          (role?.role === "MANAGER" && restock?.created_by.id === role.user)),
-      canApprove: restock?.approved === false && role?.role === "DIRECTOR",
+        order?.approved === false &&
+        (role?.role === "MANAGER" ||
+          (role?.role === "OFFICER" && order?.created_by.id === role.user)),
       canDelete:
-        role?.role === "DIRECTOR" ||
-        (restock?.approved === false &&
-          role?.role === "MANAGER" &&
-          restock?.created_by.id === role.user),
+        role?.role === "MANAGER" ||
+        (order?.approved === false &&
+          role?.role === "OFFICER" &&
+          order?.created_by.id === role.user),
+      canApprove: order?.approved === false && role?.role === "MANAGER",
     }),
-    [restock?.approved, restock?.created_by.id, role?.role, role?.user]
+    [order?.approved, order?.created_by.id, role?.role, role?.user]
   );
 
   const selectProduct = handleSubmit((data) => {
@@ -188,13 +198,13 @@ const RestockPage = () => {
   return (
     <>
       <Head>
-        <title>Re-Stock #{restock?.id} | TopTen</title>
+        <title>Order #{order?.id} | TopTen</title>
       </Head>
 
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          backHref={`/stores/${router.query.storeId as string}/restocks`}
-          heading={`ReStock #${restock?.id ?? ""}`}
+          backHref={`/stores/${router.query.storeId as string}/orders`}
+          heading={`Order #${order?.id ?? ""}`}
           breadcrumbItems={[
             { name: "Stores", path: `/stores` },
             {
@@ -202,10 +212,10 @@ const RestockPage = () => {
               path: `/stores/${store?.id ?? ""}`,
             },
             {
-              name: "Re-Stocks",
-              path: `/stores/${router.query.storeId as string}/restocks`,
+              name: "Orders",
+              path: `/stores/${router.query.storeId as string}/orders`,
             },
-            { name: `ReStock #${restock?.id ?? ""}` },
+            { name: `Order #${order?.id ?? ""}` },
           ]}
         />
 
@@ -215,10 +225,23 @@ const RestockPage = () => {
           <Grid container spacing={2}>
             <Grid xs={12} md={5}>
               <List dense sx={{ mb: 2 }}>
+                <ListItem sx={{ p: 0 }}>
+                  <ListItemButton
+                    LinkComponent={NextLink}
+                    href={`/stores/${
+                      router.query.storeId as string
+                    }/customers/${order?.customer.id ?? ""}`}
+                  >
+                    <ListItemText
+                      primary={"Customer"}
+                      secondary={order?.customer.name}
+                    />
+                  </ListItemButton>
+                </ListItem>
                 <ListItem>
                   <ListItemText
                     primary={"Created at"}
-                    secondary={dayjs(restock?.created_at).format(
+                    secondary={dayjs(order?.created_at).format(
                       "DD/MM/YYYY HH:mm A"
                     )}
                   />
@@ -226,13 +249,13 @@ const RestockPage = () => {
                 <ListItem>
                   <ListItemText
                     primary={"Created by"}
-                    secondary={restock?.created_by.email}
+                    secondary={order?.created_by.email}
                   />
                 </ListItem>
                 <ListItem>
                   <ListItemText
                     primary={"Approved"}
-                    secondary={restock?.approved ? "Yes" : "No"}
+                    secondary={order?.approved ? "Yes" : "No"}
                   />
                 </ListItem>
               </List>
@@ -249,7 +272,10 @@ const RestockPage = () => {
                               products?.find(({ id }) => id === value) ?? null
                             }
                             options={products}
-                            onChange={(_, data) => onChange(data?.id)}
+                            onChange={(_, data) => {
+                              setValue("rate", data ? Number(data.price) : 0);
+                              onChange(data?.id);
+                            }}
                             getOptionLabel={(option) => option.name}
                             groupBy={(option) => option.group_name}
                             renderInput={(params) => (
@@ -270,7 +296,7 @@ const RestockPage = () => {
                         control={control}
                       />
                     </Grid>
-                    <Grid xs={12}>
+                    <Grid xs={6}>
                       <Controller
                         name="quantity"
                         control={control}
@@ -287,9 +313,26 @@ const RestockPage = () => {
                         )}
                       />
                     </Grid>
+                    <Grid xs={6}>
+                      <Controller
+                        name="rate"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            onChange={(e) => field.onChange(+e.target.value)}
+                            label="Rate"
+                            type="number"
+                            inputProps={{ min: 0 }}
+                            error={!!errors.quantity}
+                            helperText={errors.quantity?.message}
+                          />
+                        )}
+                      />
+                    </Grid>
                     <Grid xs={12} sx={{ textAlign: "right" }}>
                       <Button type="submit" variant="text">
-                        Add Quantity
+                        Add Product
                       </Button>
                     </Grid>
                   </Grid>
@@ -324,10 +367,14 @@ const RestockPage = () => {
                     variant="contained"
                     loading={isUpdatingStock}
                     disabled={
-                      JSON.stringify(restock?.items) ===
-                      JSON.stringify(selectedProducts)
+                      JSON.stringify(
+                        order?.items.map((item) => ({
+                          ...item,
+                          rate: Number(item.rate),
+                        }))
+                      ) === JSON.stringify(selectedProducts)
                     }
-                    onClick={() => updateRestock()}
+                    onClick={() => updateOrder()}
                   >
                     Update
                   </LoadingButton>
@@ -336,8 +383,8 @@ const RestockPage = () => {
                   <LoadingButton
                     variant="text"
                     color="error"
-                    loading={isDeletingRestock}
-                    onClick={() => deleteRestock()}
+                    loading={isDeletingOrder}
+                    onClick={() => deleteOrder()}
                   >
                     Delete
                   </LoadingButton>
@@ -347,7 +394,7 @@ const RestockPage = () => {
                   <LoadingButton
                     variant="contained"
                     loading={isApproving}
-                    onClick={() => approveRestock()}
+                    onClick={() => approveOrder()}
                     sx={{ mr: "auto" }}
                   >
                     Approve
@@ -362,7 +409,7 @@ const RestockPage = () => {
   );
 };
 
-export default RestockPage;
+export default OrderPage;
 
 const ProductsTable = ({
   selected,
@@ -383,6 +430,7 @@ const ProductsTable = ({
             <TableCell>#</TableCell>
             <TableCell>Name</TableCell>
             <TableCell align="center">Quantity</TableCell>
+            <TableCell align="right">Rate</TableCell>
             {immutable ? null : <TableCell align="center">Actions</TableCell>}
           </TableRow>
         </TableHead>
@@ -399,6 +447,7 @@ const ProductsTable = ({
                 {products.find(({ id }) => id === row.product)?.name}
               </TableCell>
               <TableCell align="center">{row.quantity}</TableCell>
+              <TableCell align="right">{row.rate}</TableCell>
               {immutable ? null : (
                 <TableCell align="center">
                   <IconButton
@@ -414,11 +463,18 @@ const ProductsTable = ({
           ))}
           {selected.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} sx={{ textAlign: "center", py: 2 }}>
+              <TableCell colSpan={4} align="center" sx={{ py: 2 }}>
                 no product selected.
               </TableCell>
             </TableRow>
-          ) : null}
+          ) : null}{" "}
+          <TableRow>
+            <TableCell colSpan={2} />
+            <TableCell align="right">Order Total</TableCell>
+            <TableCell align="right">
+              {selected.reduce((acc, crr) => acc + crr.rate * crr.quantity, 0)}
+            </TableCell>
+          </TableRow>
         </TableBody>
       </Table>
     </TableContainer>

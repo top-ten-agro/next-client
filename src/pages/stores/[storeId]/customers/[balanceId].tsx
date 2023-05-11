@@ -8,20 +8,18 @@ import Grid from "@mui/material/Unstable_Grid2";
 import PageToolbar from "@/components/PageToolbar";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import { useCurrentStore } from "@/lib/store/stores";
-import type { Customer } from "@/lib/types";
 import { AxiosError } from "axios";
+import type { CustomerBalance } from "@/lib/types";
 
 const CustomerPage = () => {
   const axios = useAxiosAuth();
   const router = useRouter();
   const store = useCurrentStore((state) => state.store);
-  const { data: customer, isLoading } = useQuery({
-    queryKey: ["customer", router.query.storeId, router.query.customerId],
+  const { data: balance, isLoading } = useQuery({
+    queryKey: ["balance", router.query.balanceId],
     queryFn: async () => {
-      const { data } = await axios.get<Customer>(
-        `api/customers/${router.query.customerId as string}/?store=${
-          router.query.storeId as string
-        }&expand=balances`
+      const { data } = await axios.get<CustomerBalance>(
+        `api/balances/${router.query.balanceId as string}/`
       );
       return data;
     },
@@ -35,12 +33,12 @@ const CustomerPage = () => {
   return (
     <>
       <Head>
-        <title>{customer?.name ?? "Customer"} | TopTen</title>
+        <title>{balance?.customer.name ?? "Customer"} | TopTen</title>
       </Head>
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          backHref={`/stores/${router.query.storeId as string}/restocks`}
-          heading={customer?.name ?? "Customer"}
+          backHref={`/stores/${router.query.storeId as string}/customers`}
+          heading={balance?.customer.name ?? "Customer"}
           breadcrumbItems={[
             { name: "Stores", path: `/stores` },
             {
@@ -51,7 +49,7 @@ const CustomerPage = () => {
               name: "Customers",
               path: `/stores/${router.query.storeId as string}/customers`,
             },
-            { name: customer?.name ?? "Customer" },
+            { name: balance?.customer.name ?? "Customer" },
           ]}
         />
 

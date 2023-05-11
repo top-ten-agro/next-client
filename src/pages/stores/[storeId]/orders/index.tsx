@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { useState } from "react";
 import Head from "next/head";
-import Container from "@mui/material/Container";
-import Box from "@mui/material/Box";
-import PageToolbar from "@/components/PageToolbar";
-import { useCurrentStore } from "@/lib/store/stores";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import Container from "@mui/material/Container";
+import PageToolbar from "@/components/PageToolbar";
+import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
+import Box from "@mui/material/Box";
 import { useQuery } from "@tanstack/react-query";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import MaterialReactTable from "material-react-table";
@@ -15,20 +14,21 @@ import type {
   MRT_PaginationState,
   MRT_SortingState,
 } from "material-react-table";
-import type { CustomerBalance, ListResponse } from "@/lib/types";
+import type { Order, ListResponse } from "@/lib/types";
+import dayjs from "dayjs";
 
-const Customers = () => {
+const Orders = () => {
   const router = useRouter();
   const store = useCurrentStore((state) => state.store);
-
+  const role = useStoreRole((state) => state.role);
   return (
     <>
       <Head>
-        <title>Customers | TopTen</title>
+        <title>Orders | TopTen</title>
       </Head>
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          heading="Customers"
+          heading="Orders"
           backHref={`/stores/${router.query.storeId as string}`}
           breadcrumbItems={[
             { name: "Stores", path: `/stores` },
@@ -36,18 +36,26 @@ const Customers = () => {
               name: store?.name ?? "store",
               path: `/stores/${router.query.storeId as string}`,
             },
-            { name: "Customers" },
+            { name: "Orders" },
           ]}
+          action={
+            role?.role === "OFFICER"
+              ? {
+                  text: "New Order",
+                  href: `/stores/${router.query.storeId as string}/orders/add`,
+                }
+              : undefined
+          }
         />
-        <CustomersTable />
+        <OrdersTable />
       </Container>
     </>
   );
 };
 
-export default Customers;
+export default Orders;
 
-const CustomersTable = () => {
+const OrdersTable = () => {
   const axios = useAxiosAuth();
   const router = useRouter();
   const [count, setCount] = useState(0);
@@ -65,7 +73,7 @@ const CustomersTable = () => {
 
   const { data, isLoading, isError, isFetching } = useQuery({
     queryKey: [
-      "balancecs",
+      "orders",
       router.query.storeId,
       columnFilters,
       pagination.pageIndex,
@@ -74,6 +82,7 @@ const CustomersTable = () => {
     ],
     queryFn: async () => {
       const params = new URLSearchParams({
+        expand: "created_by,customer",
         store: router.query.storeId as string,
         per_page: `${pagination.pageSize}`,
         page: `${pagination.pageIndex + 1}`,
@@ -86,13 +95,14 @@ const CustomersTable = () => {
       }
 
       columnFilters.forEach((item) => {
+        if (typeof item.value === "boolean") {
+          return void params.append(item.id, item.value ? "true" : "false");
+        }
         params.append(item.id, `${item.value as string}`);
       });
 
       const { data } = await axios
-        .get<ListResponse<CustomerBalance>>(
-          `api/balances/?${params.toString()}`
-        )
+        .get<ListResponse<Order>>(`api/orders/?${params.toString()}`)
         .catch((error) => {
           throw error;
         });
@@ -100,6 +110,52 @@ const CustomersTable = () => {
     },
     onSuccess: (data) => setCount(data.count),
   });
+
+  const columns = useMemo<MRT_ColumnDef<Order>[]>(
+    () => [
+      { accessorKey: "id", header: "ID", enableSorting: false },
+      {
+        accessorKey: "customer.id",
+        header: "Customer ID",
+        enableSorting: false,
+      },
+      {
+        accessorKey: "customer.name",
+        header: "Customer",
+        enableSorting: false,
+      },
+      {
+        accessorKey: "created_by.email",
+        header: "Created By",
+      },
+      {
+        accessorKey: "approved",
+        header: "Approved",
+        filterVariant: "select",
+        filterSelectOptions: [
+          { text: "Yes", value: true },
+          { text: "No", value: false },
+        ],
+        Cell: ({ cell }) => (cell.getValue<boolean>() ? "Yes" : "No"),
+      },
+      {
+        accessorKey: "amount",
+        header: "Amount",
+        enableColumnFilter: false,
+        muiTableHeadCellProps: { align: "right" },
+        muiTableBodyCellProps: { align: "right" },
+      },
+
+      {
+        accessorKey: "created_at",
+        header: "Created At",
+        enableColumnFilter: false,
+        Cell: ({ cell }) =>
+          dayjs(cell.getValue<string>()).format("DD/MM/YYYY HH:mm A"),
+      },
+    ],
+    []
+  );
   return (
     <Box sx={{ position: "relative" }}>
       <Box
@@ -110,9 +166,9 @@ const CustomersTable = () => {
           width: "100%",
         }}
       >
-        <MaterialReactTable<CustomerBalance>
+        <MaterialReactTable<Order>
           columns={columns}
-          data={data ? data.results : []}
+          data={data?.results ?? []}
           enableGlobalFilter={false}
           manualFiltering
           manualPagination
@@ -133,10 +189,10 @@ const CustomersTable = () => {
             sx: { cursor: "pointer" },
             onClick: () =>
               void router.push({
-                pathname: "/stores/[storeId]/customers/[balanceId]",
+                pathname: "/stores/[storeId]/orders/[orderId]",
                 query: {
                   ...router.query,
-                  balanceId: row.getValue<string>("id"),
+                  orderId: row.getValue<string>("id"),
                 },
               }),
           })}
@@ -151,45 +207,12 @@ const CustomersTable = () => {
           defaultColumn={{
             enableGlobalFilter: false,
           }}
-          initialState={{ density: "compact" }}
+          initialState={{
+            density: "compact",
+            columnVisibility: { "customer.id": false },
+          }}
         />
       </Box>
     </Box>
   );
 };
-
-const columns: MRT_ColumnDef<CustomerBalance>[] = [
-  {
-    accessorKey: "customer.id",
-    header: "ID",
-    enableSorting: false,
-  },
-  {
-    accessorKey: "id",
-    header: "Balance ID",
-  },
-  {
-    accessorKey: "customer.name",
-    header: "Name",
-    enableSorting: false,
-  },
-  {
-    accessorKey: "customer.phone",
-    header: "Phone",
-    enableSorting: false,
-  },
-  {
-    accessorKey: "revenue",
-    header: "Sales",
-    enableColumnFilter: false,
-    muiTableHeadCellProps: { align: "right" },
-    muiTableBodyCellProps: { align: "right" },
-  },
-  {
-    accessorKey: "cash_in",
-    header: "Cash In",
-    enableColumnFilter: false,
-    muiTableHeadCellProps: { align: "right" },
-    muiTableBodyCellProps: { align: "right" },
-  },
-];
