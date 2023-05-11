@@ -54,6 +54,22 @@ export type ReStock = {
   items?: Array<{ product: number; quantity: number }>;
 };
 
+export type Customer = {
+  id: number;
+  name: string;
+  phone: string;
+  created_at: string;
+  address: string;
+};
+
+export type Balance = {
+  id: number;
+  cash_in: string;
+  revenue: string;
+  customer: number;
+  store: number;
+};
+
 type Prettify<T> = {
   [K in keyof T]: T[K];
   // eslint-disable-next-line @typescript-eslint/ban-types
