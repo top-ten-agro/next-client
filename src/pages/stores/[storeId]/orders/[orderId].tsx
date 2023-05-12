@@ -188,6 +188,17 @@ const OrderPage = () => {
     [order?.approved, order?.created_by.id, role?.role, role?.user]
   );
 
+  const notUpdated = useMemo(
+    () =>
+      JSON.stringify(
+        order?.items.map((item) => ({
+          ...item,
+          rate: Number(item.rate),
+        }))
+      ) === JSON.stringify(selectedProducts),
+    [order, selectedProducts]
+  );
+
   const selectProduct = handleSubmit((data) => {
     reset();
     setSelectedProducts((val) => [
@@ -366,14 +377,7 @@ const OrderPage = () => {
                   <LoadingButton
                     variant="contained"
                     loading={isUpdatingStock}
-                    disabled={
-                      JSON.stringify(
-                        order?.items.map((item) => ({
-                          ...item,
-                          rate: Number(item.rate),
-                        }))
-                      ) === JSON.stringify(selectedProducts)
-                    }
+                    disabled={notUpdated}
                     onClick={() => updateOrder()}
                   >
                     Update
@@ -396,6 +400,7 @@ const OrderPage = () => {
                     loading={isApproving}
                     onClick={() => approveOrder()}
                     sx={{ mr: "auto" }}
+                    disabled={!notUpdated}
                   >
                     Approve
                   </LoadingButton>

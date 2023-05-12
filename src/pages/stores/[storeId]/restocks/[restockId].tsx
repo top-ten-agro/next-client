@@ -348,6 +348,10 @@ const RestockPage = () => {
                     variant="contained"
                     loading={isApproving}
                     onClick={() => approveRestock()}
+                    disabled={
+                      JSON.stringify(restock?.items) !==
+                      JSON.stringify(selectedProducts)
+                    }
                     sx={{ mr: "auto" }}
                   >
                     Approve

@@ -49,6 +49,7 @@ const TransactionPage = () => {
     control,
     formState: { errors },
     reset,
+    watch,
     handleSubmit,
   } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -60,6 +61,7 @@ const TransactionPage = () => {
       note: "",
     },
   });
+  const allFields = watch();
 
   const {
     data: transaction,
@@ -171,6 +173,7 @@ const TransactionPage = () => {
   });
 
   const updateTransaction = handleSubmit((data) => submitTrx(data));
+
   const permissions = useMemo(
     () => ({
       canUpdate:
@@ -187,6 +190,17 @@ const TransactionPage = () => {
     }),
     [transaction?.approved, transaction?.created_by.id, role?.role, role?.user]
   );
+  const notUpdated = useMemo(() => {
+    if (!transaction) return true;
+    return (
+      allFields.title === transaction.title &&
+      allFields.type === transaction.type &&
+      allFields.amount === Number(transaction.amount) &&
+      allFields.category === transaction.category &&
+      allFields.note == transaction.note
+    );
+  }, [transaction, allFields]);
+
   return (
     <>
       <Head>
@@ -334,6 +348,7 @@ const TransactionPage = () => {
                           variant="contained"
                           type="submit"
                           loading={isUpdatingStock}
+                          disabled={notUpdated}
                         >
                           Update
                         </LoadingButton>
@@ -357,6 +372,7 @@ const TransactionPage = () => {
                           loading={isApproving}
                           onClick={() => approveTransaction()}
                           sx={{ mr: "auto" }}
+                          disabled={!notUpdated}
                         >
                           Approve
                         </LoadingButton>

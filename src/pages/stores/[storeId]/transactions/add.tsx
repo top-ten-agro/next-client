@@ -84,10 +84,10 @@ const AddTransaction = () => {
     onSuccess: (data) => {
       if (!data) return;
       void router.push({
-        pathname: "/stores/[storeId]/transactions/[transactionId]",
+        pathname: "/stores/[storeId]/transactions/[txnId]",
         query: {
           ...router.query,
-          transactionId: data.id,
+          txnId: data.id,
         },
       });
     },

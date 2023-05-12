@@ -16,8 +16,11 @@ import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import LinearProgress from "@mui/material/LinearProgress";
 import AuthLayout from "@/layouts/AuthLayout";
+import { AxiosError } from "axios";
+import { toast } from "react-toastify";
 import axios from "@/lib/axios";
 import type { NextPageWithLayout } from "./_app";
+import type { User } from "next-auth";
 
 const schema = z
   .object({
@@ -59,12 +62,26 @@ const RegisterUser: NextPageWithLayout = () => {
   const { mutate: registeruser, isLoading } = useMutation({
     mutationKey: ["register"],
     mutationFn: async (data: z.infer<typeof schema>) => {
-      await axios.post("api/auth/register/", { ...data, confirm: undefined });
+      await axios.post<User>("api/auth/register/", {
+        ...data,
+        confirm: undefined,
+      });
+      return data;
+    },
+    onSuccess: async (data) => {
       await signIn("credentials", {
         redirect: true,
         email: data.email,
         password: data.password,
       });
+    },
+    onError: (error) => {
+      if (error instanceof AxiosError && error.response?.data) {
+        const data = error.response.data as Record<string, Array<string>>;
+        Object.keys(data).forEach((key) =>
+          toast.error(`${data[key]?.join(", ") ?? ""}`)
+        );
+      }
     },
   });
 
