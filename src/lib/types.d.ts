@@ -26,7 +26,7 @@ export type Product = {
   updated_at: string;
 };
 
-export type Stock = {
+export type ProductStock = {
   id: number;
   product: Product;
   store: number;
@@ -88,6 +88,21 @@ export type Order = {
   updated_at: string;
   created_by: Prettify<Pick<User, "id" | "email">>;
 };
+
+export type Transaction = Prettify<{
+  id: number;
+  type: "IN" | "OUT";
+  category: "SALES" | "TRANSPORT" | "BILL";
+  amount: string;
+  title: string;
+  note: string | null;
+  approved: boolean;
+  store: number;
+  customer: Pick<Customer, "id" | "name"> | null;
+  created_by: Pick<User, "id" | "email">;
+  created_at: string;
+  updated_at: string;
+}>;
 
 type Prettify<T> = {
   [K in keyof T]: T[K];

@@ -324,8 +324,8 @@ const OrderPage = () => {
                             label="Rate"
                             type="number"
                             inputProps={{ min: 0 }}
-                            error={!!errors.quantity}
-                            helperText={errors.quantity?.message}
+                            error={!!errors.rate}
+                            helperText={errors.rate?.message}
                           />
                         )}
                       />

@@ -1,35 +1,24 @@
-import { useMemo } from "react";
+import { useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
 import MaterialReactTable from "material-react-table";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import { useCurrentStore } from "@/lib/store/stores";
-import type { MRT_ColumnDef } from "material-react-table";
-import type { Stock } from "@/lib/types";
 import PageToolbar from "@/components/PageToolbar";
+import type { ListResponse, ProductStock } from "@/lib/types";
+import type {
+  MRT_ColumnDef,
+  MRT_ColumnFiltersState,
+  MRT_PaginationState,
+  MRT_SortingState,
+} from "material-react-table";
 
 const StockPage = () => {
   const store = useCurrentStore((state) => state.store);
-  const axios = useAxiosAuth();
   const router = useRouter();
-  const { data: stocks, isLoading } = useQuery({
-    queryKey: ["stock", router.query.storeId],
-    queryFn: async () => {
-      if (typeof router.query.storeId !== "string") {
-        return [] as Stock[];
-      }
-      const { data } = await axios
-        .get<Stock[]>(`api/stores/${router.query.storeId}/stock/`)
-        .catch((error) => {
-          throw error;
-        });
-      return data;
-    },
-  });
 
   return (
     <>
@@ -44,13 +33,13 @@ const StockPage = () => {
             { name: "Stores", path: `/stores` },
             {
               name: store?.name ?? "store",
-              path: `/stores/${store?.id ?? ""}`,
+              path: `/stores/${router.query.storeId as string}`,
             },
             { name: "Stock" },
           ]}
         />
 
-        <ProductStockTable stocks={stocks ?? []} isLoading={isLoading} />
+        <ProductStockTable />
       </Container>
     </>
   );
@@ -58,29 +47,65 @@ const StockPage = () => {
 
 export default StockPage;
 
-const ProductStockTable = ({
-  stocks,
-  isLoading,
-}: {
-  stocks: Stock[];
-  isLoading: boolean;
-}) => {
-  const columns = useMemo<MRT_ColumnDef<Stock>[]>(
-    () => [
-      { accessorKey: "id", header: "#" },
-      { accessorKey: "product.name", header: "Product Name" },
-      { accessorKey: "product.group_name", header: "Group Name" },
-      { accessorKey: "product.price", header: "Price" },
-      { accessorKey: "quantity", header: "Quantity" },
-      {
-        accessorKey: "product.created_at",
-        header: "Created At",
-        Cell: ({ cell }) =>
-          dayjs(cell.getValue<string>()).format("DD/MM/YYYY HH:mm A"),
-      },
-    ],
+const ProductStockTable = () => {
+  const axios = useAxiosAuth();
+  const router = useRouter();
+  const [count, setCount] = useState(0);
+
+  const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>(
     []
   );
+  const [sorting, setSorting] = useState<MRT_SortingState>([
+    { id: "created_at", desc: true },
+  ]);
+  const [pagination, setPagination] = useState<MRT_PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
+  const { data, isLoading, isError, isFetching } = useQuery({
+    queryKey: [
+      "stocks",
+      router.query.storeId,
+      columnFilters,
+      pagination.pageIndex,
+      pagination.pageSize,
+      sorting,
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        store: router.query.storeId as string,
+        per_page: `${pagination.pageSize}`,
+        page: `${pagination.pageIndex + 1}`,
+      });
+      if (sorting.length) {
+        params.set(
+          "ordering",
+          sorting
+            .map((item) => {
+              const id =
+                item.id === "product.id"
+                  ? "product"
+                  : item.id.replace(".", "__");
+              return `${item.desc ? "-" : ""}${id}`;
+            })
+            .join()
+        );
+      }
+
+      columnFilters.forEach((item) => {
+        params.set(item.id, `${item.value as string}`);
+      });
+
+      const { data } = await axios
+        .get<ListResponse<ProductStock>>(`api/stocks/?${params.toString()}`)
+        .catch((error) => {
+          throw error;
+        });
+      return data;
+    },
+    onSuccess: (data) => setCount(data.count),
+  });
   return (
     <Box sx={{ position: "relative" }}>
       <Box
@@ -91,16 +116,66 @@ const ProductStockTable = ({
           width: "100%",
         }}
       >
-        <MaterialReactTable<Stock>
+        <MaterialReactTable<ProductStock>
           columns={columns}
-          data={stocks}
-          state={{ isLoading: isLoading }}
-          initialState={{
-            sorting: [{ id: "product.created_at", desc: true }],
-            density: "compact",
+          data={data ? data.results : []}
+          enableGlobalFilter={false}
+          manualFiltering
+          manualPagination
+          manualSorting
+          onColumnFiltersChange={setColumnFilters}
+          onPaginationChange={setPagination}
+          onSortingChange={setSorting}
+          rowCount={count}
+          state={{
+            columnFilters,
+            isLoading,
+            pagination,
+            showAlertBanner: isError,
+            showProgressBars: isFetching,
+            sorting,
           }}
+          muiToolbarAlertBannerProps={
+            isError
+              ? {
+                  color: "error",
+                  children: "Error loading data",
+                }
+              : undefined
+          }
+          defaultColumn={{
+            enableGlobalFilter: false,
+          }}
+          initialState={{ density: "compact" }}
         />
       </Box>
     </Box>
   );
 };
+
+const columns: MRT_ColumnDef<ProductStock>[] = [
+  {
+    accessorKey: "product.id",
+    header: "ID",
+    enableSorting: false,
+  },
+
+  {
+    accessorKey: "product.name",
+    header: "Name",
+  },
+  {
+    accessorKey: "product.price",
+    header: "Price",
+    enableColumnFilter: false,
+    muiTableHeadCellProps: { align: "right" },
+    muiTableBodyCellProps: { align: "right" },
+  },
+  {
+    accessorKey: "quantity",
+    header: "Quantity",
+    enableColumnFilter: false,
+    muiTableHeadCellProps: { align: "center" },
+    muiTableBodyCellProps: { align: "center" },
+  },
+];

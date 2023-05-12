@@ -36,7 +36,7 @@ const schema = z.object({
   rate: z.number().min(0),
 });
 
-const OrderPage = () => {
+const AddOrder = () => {
   const router = useRouter();
   const axios = useAxiosAuth();
   const store = useCurrentStore((state) => state.store);
@@ -234,8 +234,8 @@ const OrderPage = () => {
                           label="Rate"
                           type="number"
                           inputProps={{ min: 0 }}
-                          error={!!errors.quantity}
-                          helperText={errors.quantity?.message}
+                          error={!!errors.rate}
+                          helperText={errors.rate?.message}
                         />
                       )}
                     />
@@ -290,7 +290,7 @@ const OrderPage = () => {
   );
 };
 
-export default OrderPage;
+export default AddOrder;
 
 const ProductsTable = ({
   selected,
