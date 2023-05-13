@@ -25,6 +25,9 @@ const lightTheme = createTheme({
     MuiButton: {
       defaultProps: { variant: "contained", disableElevation: true },
     },
+    MuiPaper: {
+      defaultProps: { variant: "outlined" },
+    },
   },
 });
 

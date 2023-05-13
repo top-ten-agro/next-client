@@ -17,8 +17,8 @@ interface Props {
   backHref?: string;
   heading: string;
   action?: {
+    text: React.ReactNode;
     href: string;
-    text: string;
   };
 }
 
@@ -61,7 +61,7 @@ export default PageToolbar;
 const MuiBreadcrumbs = ({ items }: { items: BreadcrumbItem[] }) => {
   const isMobile = useMediaQuery("(max-width:600px)");
   return (
-    <Breadcrumbs maxItems={isMobile ? 4 : undefined} aria-label="breadcrumb">
+    <Breadcrumbs maxItems={isMobile ? 3 : undefined} aria-label="breadcrumb">
       <Link underline="hover" component={NextLink} href="/">
         Home
       </Link>

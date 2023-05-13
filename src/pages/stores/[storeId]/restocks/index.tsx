@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/router";
 import MaterialReactTable from "material-react-table";
+import DoneIcon from "@mui/icons-material/Done";
+import CloseIcon from "@mui/icons-material/Close";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import type {
   MRT_ColumnDef,
@@ -123,12 +125,15 @@ const ReStockTable = () => {
       {
         accessorKey: "approved",
         header: "Approved",
-        filterVariant: "select",
-        filterSelectOptions: [
-          { text: "Yes", value: true },
-          { text: "No", value: false },
-        ],
-        Cell: ({ cell }) => (cell.getValue<boolean>() ? "Yes" : "No"),
+        Cell: ({ cell }) =>
+          cell.getValue<boolean>() ? (
+            <DoneIcon color="success" />
+          ) : (
+            <CloseIcon color="error" />
+          ),
+        muiTableHeadCellProps: { align: "center" },
+        muiTableBodyCellProps: { align: "center", sx: { p: 0 } },
+        enableColumnFilter: false,
       },
       {
         accessorKey: "created_at",

@@ -35,6 +35,7 @@ import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import Typography from "@mui/material/Typography";
 import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
 import type { ListResponse, Product, Order } from "@/lib/types";
+import { toBdt } from "@/lib/formatter";
 
 const schema = z.object({
   product: z.number().int(),
@@ -452,7 +453,7 @@ const ProductsTable = ({
                 {products.find(({ id }) => id === row.product)?.name}
               </TableCell>
               <TableCell align="center">{row.quantity}</TableCell>
-              <TableCell align="right">{row.rate}</TableCell>
+              <TableCell align="right">{toBdt(row.rate)}</TableCell>
               {immutable ? null : (
                 <TableCell align="center">
                   <IconButton
@@ -477,7 +478,9 @@ const ProductsTable = ({
             <TableCell colSpan={2} />
             <TableCell align="right">Order Total</TableCell>
             <TableCell align="right">
-              {selected.reduce((acc, crr) => acc + crr.rate * crr.quantity, 0)}
+              {toBdt(
+                selected.reduce((acc, crr) => acc + crr.rate * crr.quantity, 0)
+              )}
             </TableCell>
           </TableRow>
         </TableBody>

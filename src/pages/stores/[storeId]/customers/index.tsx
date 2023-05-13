@@ -16,6 +16,7 @@ import type {
   MRT_SortingState,
 } from "material-react-table";
 import type { CustomerBalance, ListResponse } from "@/lib/types";
+import { toBdt } from "@/lib/formatter";
 
 const Customers = () => {
   const router = useRouter();
@@ -182,6 +183,7 @@ const columns: MRT_ColumnDef<CustomerBalance>[] = [
     accessorKey: "revenue",
     header: "Sales",
     enableColumnFilter: false,
+    Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
     muiTableHeadCellProps: { align: "right" },
     muiTableBodyCellProps: { align: "right" },
   },
@@ -189,6 +191,7 @@ const columns: MRT_ColumnDef<CustomerBalance>[] = [
     accessorKey: "cash_in",
     header: "Cash In",
     enableColumnFilter: false,
+    Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
     muiTableHeadCellProps: { align: "right" },
     muiTableBodyCellProps: { align: "right" },
   },

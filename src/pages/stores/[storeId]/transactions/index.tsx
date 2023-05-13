@@ -7,10 +7,12 @@ import PageToolbar from "@/components/PageToolbar";
 import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
 import Box from "@mui/material/Box";
 import { useQuery } from "@tanstack/react-query";
-import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
+import Typography from "@mui/material/Typography";
 import MaterialReactTable from "material-react-table";
 import DoneIcon from "@mui/icons-material/Done";
 import CloseIcon from "@mui/icons-material/Close";
+import AddIcon from "@mui/icons-material/Add";
+import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import type {
   MRT_ColumnDef,
   MRT_ColumnFiltersState,
@@ -19,6 +21,7 @@ import type {
 } from "material-react-table";
 import type { Transaction, ListResponse } from "@/lib/types";
 import dayjs from "dayjs";
+import { toBdt } from "@/lib/formatter";
 
 const Transactions = () => {
   const router = useRouter();
@@ -44,7 +47,16 @@ const Transactions = () => {
           action={
             role?.role === "OFFICER"
               ? {
-                  text: "New Transaction",
+                  text: (
+                    <>
+                      <AddIcon sx={{ display: { sm: "none" } }} />
+                      <Typography
+                        sx={{ display: { xs: "none", sm: "inline" } }}
+                      >
+                        New Transaction
+                      </Typography>
+                    </>
+                  ),
                   href: `/stores/${
                     router.query.storeId as string
                   }/transactions/add`,
@@ -120,7 +132,7 @@ const TransactionsTable = () => {
 
   const columns = useMemo<MRT_ColumnDef<Transaction>[]>(
     () => [
-      { accessorKey: "id", header: "ID", enableSorting: false, size: 20 },
+      { accessorKey: "id", header: "ID", enableSorting: false, size: 100 },
       {
         accessorKey: "type",
         header: "Type",
@@ -131,15 +143,13 @@ const TransactionsTable = () => {
             color={cell.getValue<string>() === "IN" ? "success" : "error"}
           />
         ),
-        size: 100,
-
+        size: 120,
         filterVariant: "select",
         filterSelectOptions: [
           { text: "Cash In", value: "IN" },
           { text: "Cash Out", value: "OUT" },
         ],
-        muiTableHeadCellProps: { align: "center" },
-        muiTableBodyCellProps: { align: "center" },
+        muiTableBodyCellProps: { sx: { p: 0 } },
       },
       { accessorKey: "title", header: "Title" },
       {
@@ -154,6 +164,8 @@ const TransactionsTable = () => {
           { text: "Transport", value: "TRANSPORT" },
           { text: "Bill", value: "BILL" },
         ],
+
+        muiTableBodyCellProps: { sx: { p: 0 } },
       },
       {
         accessorKey: "customer.name",
@@ -168,24 +180,21 @@ const TransactionsTable = () => {
       {
         accessorKey: "approved",
         header: "Approved",
-        filterVariant: "select",
         Cell: ({ cell }) =>
           cell.getValue<boolean>() ? (
             <DoneIcon color="success" />
           ) : (
             <CloseIcon color="error" />
           ),
-        filterSelectOptions: [
-          { text: "Yes", value: true },
-          { text: "No", value: false },
-        ],
         muiTableHeadCellProps: { align: "center" },
-        muiTableBodyCellProps: { align: "center" },
+        muiTableBodyCellProps: { align: "center", sx: { p: 0 } },
+        enableColumnFilter: false,
       },
       {
         accessorKey: "amount",
         header: "Amount",
         enableColumnFilter: false,
+        Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
         muiTableHeadCellProps: { align: "right" },
         muiTableBodyCellProps: { align: "right" },
       },

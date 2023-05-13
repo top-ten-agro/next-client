@@ -8,6 +8,8 @@ import Box from "@mui/material/Box";
 import { useQuery } from "@tanstack/react-query";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import MaterialReactTable from "material-react-table";
+import DoneIcon from "@mui/icons-material/Done";
+import CloseIcon from "@mui/icons-material/Close";
 import type {
   MRT_ColumnDef,
   MRT_ColumnFiltersState,
@@ -16,6 +18,7 @@ import type {
 } from "material-react-table";
 import type { Order, ListResponse } from "@/lib/types";
 import dayjs from "dayjs";
+import { toBdt } from "@/lib/formatter";
 
 const Orders = () => {
   const router = useRouter();
@@ -126,22 +129,26 @@ const OrdersTable = () => {
       },
       {
         accessorKey: "created_by.email",
-        header: "Created By",
+        header: "Officer",
       },
       {
         accessorKey: "approved",
         header: "Approved",
-        filterVariant: "select",
-        filterSelectOptions: [
-          { text: "Yes", value: true },
-          { text: "No", value: false },
-        ],
-        Cell: ({ cell }) => (cell.getValue<boolean>() ? "Yes" : "No"),
+        Cell: ({ cell }) =>
+          cell.getValue<boolean>() ? (
+            <DoneIcon color="success" />
+          ) : (
+            <CloseIcon color="error" />
+          ),
+        muiTableHeadCellProps: { align: "center" },
+        muiTableBodyCellProps: { align: "center", sx: { p: 0 } },
+        enableColumnFilter: false,
       },
       {
         accessorKey: "amount",
         header: "Amount",
         enableColumnFilter: false,
+        Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
         muiTableHeadCellProps: { align: "right" },
         muiTableBodyCellProps: { align: "right" },
       },
