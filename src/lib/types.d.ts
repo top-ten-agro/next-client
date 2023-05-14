@@ -91,9 +91,9 @@ export type Order = {
 
 export type Transaction = Prettify<{
   id: number;
-  type: "IN" | "OUT";
   category: "SALES" | "TRANSPORT" | "BILL";
-  amount: string;
+  cash_in: string;
+  cash_out: string;
   title: string;
   note: string | null;
   approved: boolean;

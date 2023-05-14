@@ -78,12 +78,13 @@ const TransactionPage = () => {
       return data;
     },
     onSuccess: (data) => {
+      const { cash_in, cash_out } = data;
       reset({
         category: data.category,
-        amount: Number(data.amount),
+        amount: +cash_in > 0 ? +data.cash_in : +cash_out,
         note: data.note ?? undefined,
         title: data.title,
-        type: data.type,
+        type: +cash_in > 0 ? "IN" : "OUT",
       });
     },
     onError: (error) => {
@@ -99,15 +100,16 @@ const TransactionPage = () => {
       if (!transaction || transaction.approved === true) {
         throw new Error("Cannot update this transaction.");
       }
+
       const res = await axios.put(
         `api/transactions/${router.query.txnId as string}/`,
         {
           store: transaction.store,
           customer: transaction.customer?.id,
           title: props.title,
-          type: props.type,
           category: props.category,
-          amount: props.amount,
+          cash_in: props.type === "IN" ? props.amount : 0,
+          cash_out: props.type === "OUT" ? props.amount : 0,
           note: props.note,
         }
       );
@@ -194,8 +196,8 @@ const TransactionPage = () => {
     if (!transaction) return true;
     return (
       allFields.title === transaction.title &&
-      allFields.type === transaction.type &&
-      allFields.amount === Number(transaction.amount) &&
+      (allFields.amount === Number(transaction.cash_in) ||
+        allFields.amount === Number(transaction.cash_out)) &&
       allFields.category === transaction.category &&
       allFields.note == transaction.note
     );
@@ -237,7 +239,7 @@ const TransactionPage = () => {
                       control={control}
                       render={({ field }) => (
                         <ToggleButtonGroup
-                          disabled={transaction.approved}
+                          disabled
                           color="primary"
                           {...field}
                           exclusive

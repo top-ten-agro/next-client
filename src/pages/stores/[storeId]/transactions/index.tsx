@@ -1,18 +1,20 @@
 import Head from "next/head";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import { useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import Container from "@mui/material/Container";
 import Chip from "@mui/material/Chip";
-import PageToolbar from "@/components/PageToolbar";
-import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
 import Box from "@mui/material/Box";
-import { useQuery } from "@tanstack/react-query";
 import Typography from "@mui/material/Typography";
 import MaterialReactTable from "material-react-table";
 import DoneIcon from "@mui/icons-material/Done";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
+import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
+import { toBdt } from "@/lib/formatter";
+import PageToolbar from "@/components/PageToolbar";
 import type {
   MRT_ColumnDef,
   MRT_ColumnFiltersState,
@@ -20,8 +22,6 @@ import type {
   MRT_SortingState,
 } from "material-react-table";
 import type { Transaction, ListResponse } from "@/lib/types";
-import dayjs from "dayjs";
-import { toBdt } from "@/lib/formatter";
 
 const Transactions = () => {
   const router = useRouter();
@@ -133,24 +133,6 @@ const TransactionsTable = () => {
   const columns = useMemo<MRT_ColumnDef<Transaction>[]>(
     () => [
       { accessorKey: "id", header: "ID", enableSorting: false, size: 100 },
-      {
-        accessorKey: "type",
-        header: "Type",
-        Cell: ({ cell }) => (
-          <Chip
-            size="small"
-            label={cell.getValue<string>().toLowerCase()}
-            color={cell.getValue<string>() === "IN" ? "success" : "error"}
-          />
-        ),
-        size: 120,
-        filterVariant: "select",
-        filterSelectOptions: [
-          { text: "Cash In", value: "IN" },
-          { text: "Cash Out", value: "OUT" },
-        ],
-        muiTableBodyCellProps: { sx: { p: 0 } },
-      },
       { accessorKey: "title", header: "Title" },
       {
         accessorKey: "category",
@@ -175,7 +157,7 @@ const TransactionsTable = () => {
       },
       {
         accessorKey: "created_by.email",
-        header: "Created By",
+        header: "Officer",
       },
       {
         accessorKey: "approved",
@@ -189,12 +171,23 @@ const TransactionsTable = () => {
         muiTableHeadCellProps: { align: "center" },
         muiTableBodyCellProps: { align: "center", sx: { p: 0 } },
         enableColumnFilter: false,
+        size: 100,
       },
       {
-        accessorKey: "amount",
-        header: "Amount",
+        accessorKey: "cash_in",
+        header: "In",
         enableColumnFilter: false,
-        Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
+        Cell: ({ cell }) =>
+          +cell.getValue<string>() > 0 ? toBdt(+cell.getValue<string>()) : "-",
+        muiTableHeadCellProps: { align: "right" },
+        muiTableBodyCellProps: { align: "right" },
+      },
+      {
+        accessorKey: "cash_out",
+        header: "Out",
+        enableColumnFilter: false,
+        Cell: ({ cell }) =>
+          +cell.getValue<string>() > 0 ? toBdt(+cell.getValue<string>()) : "-",
         muiTableHeadCellProps: { align: "right" },
         muiTableBodyCellProps: { align: "right" },
       },
@@ -205,6 +198,8 @@ const TransactionsTable = () => {
         enableColumnFilter: false,
         Cell: ({ cell }) =>
           dayjs(cell.getValue<string>()).format("DD/MM/YYYY HH:mm A"),
+        muiTableHeadCellProps: { align: "right" },
+        muiTableBodyCellProps: { align: "right" },
       },
     ],
     []
@@ -262,7 +257,12 @@ const TransactionsTable = () => {
           }}
           initialState={{
             density: "compact",
-            columnVisibility: { "customer.id": false },
+            columnVisibility: {
+              id: false,
+              title: false,
+              category: false,
+              "customer.id": false,
+            },
           }}
         />
       </Box>

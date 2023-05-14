@@ -1,33 +1,44 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
+import { AxiosError } from "axios";
 import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
+import Tab from "@mui/material/Tab";
+import List from "@mui/material/List";
+import TabList from "@mui/lab/TabList";
 import Paper from "@mui/material/Paper";
-import TableContainer from "@mui/material/TableContainer";
 import Table from "@mui/material/Table";
+import TabPanel from "@mui/lab/TabPanel";
+import TabContext from "@mui/lab/TabContext";
+import ListItem from "@mui/material/ListItem";
 import TableRow from "@mui/material/TableRow";
+import Container from "@mui/material/Container";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
+import Grid from "@mui/material/Unstable_Grid2";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
+import TableContainer from "@mui/material/TableContainer";
 import LinearProgress from "@mui/material/LinearProgress";
-import Grid from "@mui/material/Unstable_Grid2";
-import Tab from "@mui/material/Tab";
-import TabContext from "@mui/lab/TabContext";
-import TabList from "@mui/lab/TabList";
-import TabPanel from "@mui/lab/TabPanel";
 import LocalPhoneIcon from "@mui/icons-material/LocalPhone";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import PageToolbar from "@/components/PageToolbar";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { useCurrentStore } from "@/lib/store/stores";
-import { AxiosError } from "axios";
+import MaterialReactTable from "material-react-table";
+import DoneIcon from "@mui/icons-material/Done";
+import CloseIcon from "@mui/icons-material/Close";
 import type { CustomerBalance } from "@/lib/types";
+import { useCurrentStore } from "@/lib/store/stores";
 import { toBdt } from "@/lib/formatter";
+import type {
+  MRT_ColumnDef,
+  MRT_ColumnFiltersState,
+  MRT_PaginationState,
+  MRT_SortingState,
+} from "material-react-table";
+import type { Transaction, Order, ListResponse } from "@/lib/types";
 
 const CustomerPage = () => {
   const axios = useAxiosAuth();
@@ -109,8 +120,12 @@ const CustomerPage = () => {
                   <Tab label="Transactions" value="2" />
                 </TabList>
               </Box>
-              <TabPanel value="1">Item One</TabPanel>
-              <TabPanel value="2">Item Two</TabPanel>
+              <TabPanel value="1" sx={{ padding: 0 }}>
+                <OrdersTable customerId={balance.customer.id} />
+              </TabPanel>
+              <TabPanel value="2" sx={{ padding: 0 }}>
+                <TransactionsTable customerId={balance.customer.id} />
+              </TabPanel>
             </TabContext>
           </Box>
         ) : null}
@@ -149,3 +164,331 @@ const BalanceTable = ({ balance }: { balance: CustomerBalance }) => (
     </Table>
   </TableContainer>
 );
+
+const OrdersTable = ({ customerId }: { customerId: number }) => {
+  const axios = useAxiosAuth();
+  const router = useRouter();
+  const [count, setCount] = useState(0);
+
+  const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>(
+    []
+  );
+  const [sorting, setSorting] = useState<MRT_SortingState>([
+    { id: "created_at", desc: true },
+  ]);
+  const [pagination, setPagination] = useState<MRT_PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
+  const { data, isLoading, isError, isFetching } = useQuery({
+    queryKey: [
+      "orders",
+      customerId,
+      router.query.storeId,
+      columnFilters,
+      pagination.pageIndex,
+      pagination.pageSize,
+      sorting,
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        expand: "created_by",
+        store: router.query.storeId as string,
+        customer: `${customerId}`,
+        per_page: `${pagination.pageSize}`,
+        page: `${pagination.pageIndex + 1}`,
+      });
+      if (sorting.length) {
+        params.set(
+          "ordering",
+          sorting.map((item) => `${item.desc ? "-" : ""}${item.id}`).join()
+        );
+      }
+
+      columnFilters.forEach((item) => {
+        if (typeof item.value === "boolean") {
+          return void params.append(item.id, item.value ? "true" : "false");
+        }
+        params.append(item.id, `${item.value as string}`);
+      });
+
+      const { data } = await axios
+        .get<ListResponse<Order>>(`api/orders/?${params.toString()}`)
+        .catch((error) => {
+          throw error;
+        });
+      return data;
+    },
+    onSuccess: (data) => setCount(data.count),
+  });
+
+  const columns = useMemo<MRT_ColumnDef<Order>[]>(
+    () => [
+      { accessorKey: "id", header: "ID", enableSorting: false },
+      {
+        accessorKey: "created_by.email",
+        header: "Officer",
+      },
+      {
+        accessorKey: "approved",
+        header: "Approved",
+        Cell: ({ cell }) =>
+          cell.getValue<boolean>() ? (
+            <DoneIcon color="success" />
+          ) : (
+            <CloseIcon color="error" />
+          ),
+        muiTableHeadCellProps: { align: "center" },
+        muiTableBodyCellProps: { align: "center", sx: { p: 0 } },
+        enableColumnFilter: false,
+      },
+      {
+        accessorKey: "amount",
+        header: "Amount",
+        enableColumnFilter: false,
+        Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
+        muiTableHeadCellProps: { align: "right" },
+        muiTableBodyCellProps: { align: "right" },
+      },
+
+      {
+        accessorKey: "created_at",
+        header: "Created At",
+        enableColumnFilter: false,
+        Cell: ({ cell }) =>
+          dayjs(cell.getValue<string>()).format("DD/MM/YYYY HH:mm A"),
+      },
+    ],
+    []
+  );
+  return (
+    <Box sx={{ position: "relative" }}>
+      <Box
+        sx={{
+          position: "absolute",
+          insetInline: 0,
+          overflowX: "auto",
+          width: "100%",
+        }}
+      >
+        <MaterialReactTable<Order>
+          columns={columns}
+          data={data?.results ?? []}
+          enableGlobalFilter={false}
+          manualFiltering
+          manualPagination
+          manualSorting
+          onColumnFiltersChange={setColumnFilters}
+          onPaginationChange={setPagination}
+          onSortingChange={setSorting}
+          rowCount={count}
+          state={{
+            columnFilters,
+            isLoading,
+            pagination,
+            showAlertBanner: isError,
+            showProgressBars: isFetching,
+            sorting,
+          }}
+          muiTablePaperProps={{ variant: "elevation", elevation: 0 }}
+          muiTableBodyRowProps={({ row }) => ({
+            sx: { cursor: "pointer" },
+            onClick: () =>
+              void router.push({
+                pathname: "/stores/[storeId]/orders/[orderId]",
+                query: {
+                  ...router.query,
+                  orderId: row.getValue<string>("id"),
+                },
+              }),
+          })}
+          muiToolbarAlertBannerProps={
+            isError
+              ? {
+                  color: "error",
+                  children: "Error loading data",
+                }
+              : undefined
+          }
+          defaultColumn={{
+            enableGlobalFilter: false,
+          }}
+          initialState={{
+            density: "compact",
+            columnVisibility: { "customer.id": false },
+          }}
+        />
+      </Box>
+    </Box>
+  );
+};
+
+const TransactionsTable = ({ customerId }: { customerId: number }) => {
+  const axios = useAxiosAuth();
+  const router = useRouter();
+  const [count, setCount] = useState(0);
+
+  const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>(
+    []
+  );
+  const [sorting, setSorting] = useState<MRT_SortingState>([
+    { id: "created_at", desc: true },
+  ]);
+  const [pagination, setPagination] = useState<MRT_PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
+  const { data, isLoading, isError, isFetching } = useQuery({
+    queryKey: [
+      "transactions",
+      customerId,
+      router.query.storeId,
+      columnFilters,
+      pagination.pageIndex,
+      pagination.pageSize,
+      sorting,
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        expand: "created_by",
+        customer: `${customerId}`,
+        store: router.query.storeId as string,
+        per_page: `${pagination.pageSize}`,
+        page: `${pagination.pageIndex + 1}`,
+      });
+      if (sorting.length) {
+        params.set(
+          "ordering",
+          sorting.map((item) => `${item.desc ? "-" : ""}${item.id}`).join()
+        );
+      }
+
+      columnFilters.forEach((item) => {
+        if (typeof item.value === "boolean") {
+          return void params.set(item.id, item.value ? "true" : "false");
+        }
+        params.set(item.id, `${item.value as string}`);
+      });
+
+      const { data } = await axios
+        .get<ListResponse<Transaction>>(
+          `api/transactions/?${params.toString()}`
+        )
+        .catch((error) => {
+          throw error;
+        });
+      return data;
+    },
+    onSuccess: (data) => setCount(data.count),
+  });
+
+  const columns = useMemo<MRT_ColumnDef<Transaction>[]>(
+    () => [
+      { accessorKey: "id", header: "ID", enableSorting: false, size: 100 },
+
+      { accessorKey: "title", header: "Title" },
+
+      {
+        accessorKey: "approved",
+        header: "Approved",
+        Cell: ({ cell }) =>
+          cell.getValue<boolean>() ? (
+            <DoneIcon color="success" />
+          ) : (
+            <CloseIcon color="error" />
+          ),
+        muiTableHeadCellProps: { align: "center" },
+        muiTableBodyCellProps: { align: "center", sx: { p: 0 } },
+        enableColumnFilter: false,
+      },
+      {
+        accessorKey: "cash_in",
+        header: "In",
+        enableColumnFilter: false,
+        Cell: ({ cell }) =>
+          +cell.getValue<string>() > 0 ? toBdt(+cell.getValue<string>()) : "-",
+        muiTableHeadCellProps: { align: "right" },
+        muiTableBodyCellProps: { align: "right" },
+      },
+      {
+        accessorKey: "cash_out",
+        header: "Out",
+        enableColumnFilter: false,
+        Cell: ({ cell }) =>
+          +cell.getValue<string>() > 0 ? toBdt(+cell.getValue<string>()) : "-",
+        muiTableHeadCellProps: { align: "right" },
+        muiTableBodyCellProps: { align: "right" },
+      },
+
+      {
+        accessorKey: "created_at",
+        header: "Created At",
+        enableColumnFilter: false,
+        Cell: ({ cell }) =>
+          dayjs(cell.getValue<string>()).format("DD/MM/YYYY HH:mm A"),
+      },
+    ],
+    []
+  );
+  return (
+    <Box sx={{ position: "relative" }}>
+      <Box
+        sx={{
+          position: "absolute",
+          insetInline: 0,
+          overflowX: "auto",
+          width: "100%",
+        }}
+      >
+        <MaterialReactTable<Transaction>
+          columns={columns}
+          data={data?.results ?? []}
+          enableGlobalFilter={false}
+          manualFiltering
+          manualPagination
+          manualSorting
+          onColumnFiltersChange={setColumnFilters}
+          onPaginationChange={setPagination}
+          onSortingChange={setSorting}
+          rowCount={count}
+          state={{
+            columnFilters,
+            isLoading,
+            pagination,
+            showAlertBanner: isError,
+            showProgressBars: isFetching,
+            sorting,
+          }}
+          muiTableBodyRowProps={({ row }) => ({
+            sx: { cursor: "pointer" },
+            onClick: () =>
+              void router.push({
+                pathname: "/stores/[storeId]/transactions/[txnId]",
+                query: {
+                  ...router.query,
+                  txnId: row.getValue<string>("id"),
+                },
+              }),
+          })}
+          muiToolbarAlertBannerProps={
+            isError
+              ? {
+                  color: "error",
+                  children: "Error loading data",
+                }
+              : undefined
+          }
+          defaultColumn={{
+            enableGlobalFilter: false,
+          }}
+          initialState={{
+            density: "compact",
+            columnVisibility: { "customer.id": false },
+          }}
+        />
+      </Box>
+    </Box>
+  );
+};

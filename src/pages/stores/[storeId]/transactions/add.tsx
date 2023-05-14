@@ -73,10 +73,10 @@ const AddTransaction = () => {
       const res = await axios.post(`api/transactions/`, {
         store: parseInt(router.query.storeId as string),
         title: props.title,
-        type: props.type,
         category: props.category,
         customer: props.customer,
-        amount: props.amount,
+        cash_in: props.type === "IN" ? props.amount : 0,
+        cash_out: props.type === "OUT" ? props.amount : 0,
         note: props.note,
       });
       return res.data as Transaction;
