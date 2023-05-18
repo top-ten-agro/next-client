@@ -21,6 +21,8 @@ import PostAddIcon from "@mui/icons-material/PostAdd";
 import type { AxiosInstance } from "axios";
 import type { Store } from "@/lib/types";
 import PageToolbar from "@/components/PageToolbar";
+import { useStoreRole } from "@/lib/store/stores";
+import { useSession } from "next-auth/react";
 
 const routes = [
   { name: "Product Stock", path: "stock", icon: <CategoryIcon /> },
@@ -41,6 +43,8 @@ const fetchStore = async (axios: AxiosInstance, id: string) => {
 
 const StorePage = () => {
   const { query } = useRouter();
+  const role = useStoreRole((state) => state.role);
+  const { data: session } = useSession({ required: true });
   const axios = useAxiosAuth();
   const { data: store, isLoading } = useQuery({
     queryKey: ["store", query.storeId],
@@ -69,6 +73,18 @@ const StorePage = () => {
         {isLoading ? <LinearProgress /> : null}
         {store ? (
           <Grid container spacing={2}>
+            <Grid xs={12}>
+              <ListItem>
+                <ListItemText
+                  primary={
+                    session
+                      ? `${session?.user.first_name} ${session?.user.last_name}`
+                      : "User"
+                  }
+                  secondary={role?.role.toLowerCase() ?? "user role"}
+                ></ListItemText>
+              </ListItem>
+            </Grid>
             {routes.map((route) => (
               <Grid key={route.name} xs={12} sm={6} md={3}>
                 <Card>

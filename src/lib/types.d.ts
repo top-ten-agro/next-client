@@ -18,7 +18,7 @@ export type ListResponse<T extends Record<string, unknown>> = {
 export type Product = {
   id: number;
   name: string;
-  group_name: string;
+  pack_size: string;
   price: string;
   published: boolean;
   archived: boolean;
@@ -80,6 +80,7 @@ export type CustomerBalance = Prettify<
 export type Order = {
   id: number;
   amount: string;
+  commission: string;
   approved: boolean;
   store: number;
   customer: Prettify<Pick<Customer, "id" | "name">>;

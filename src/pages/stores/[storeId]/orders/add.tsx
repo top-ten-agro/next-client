@@ -1,11 +1,8 @@
-import { useState } from "react";
+import { useReducer, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { z } from "zod";
 import { toast } from "react-toastify";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, Controller } from "react-hook-form";
 import Alert from "@mui/material/Alert";
 import LoadingButton from "@mui/lab/LoadingButton";
 import Box from "@mui/material/Box";
@@ -13,28 +10,17 @@ import Container from "@mui/material/Container";
 import LinearProgress from "@mui/material/LinearProgress";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
+import InputAdornment from "@mui/material/InputAdornment";
 import Grid from "@mui/material/Unstable_Grid2";
-import Button from "@mui/material/Button";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import IconButton from "@mui/material/IconButton";
-import DeleteIcon from "@mui/icons-material/Delete";
+import Divider from "@mui/material/Divider";
 import PageToolbar from "@/components/PageToolbar";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import Typography from "@mui/material/Typography";
 import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
 import type { ListResponse, Product, Order, Customer } from "@/lib/types";
-
-const schema = z.object({
-  product: z.number().int(),
-  quantity: z.number().int().min(1),
-  rate: z.number().min(0),
-});
+import { orderItemsReducer } from "@/lib/reducers/orderItems";
+import OrderItemForm from "@/components/OrderItemForm";
+import OrderItemsTable from "@/components/OrderItemsTable";
 
 const AddOrder = () => {
   const router = useRouter();
@@ -42,21 +28,11 @@ const AddOrder = () => {
   const store = useCurrentStore((state) => state.store);
   const role = useStoreRole((state) => state.role);
   const isRoleLoading = useStoreRole((state) => state.isLoading);
-  const [selectedProducts, setSelectedProducts] = useState<
-    z.infer<typeof schema>[]
-  >([]);
+  const [items, dispatch] = useReducer(orderItemsReducer, []);
   const [selectedCustomer, setselectedCustomer] = useState<number>();
-  const {
-    control,
-    formState: { errors },
-    reset,
-    setValue,
-    handleSubmit,
-  } = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: { quantity: 1, rate: 0 },
-  });
-  const { data: products, isFetching } = useQuery({
+  const [commission, setCommission] = useState(0);
+
+  const { data: products } = useQuery({
     queryKey: ["products", router.query.storeId],
     queryFn: async () => {
       const { data } = await axios.get<ListResponse<Product>>(
@@ -66,7 +42,7 @@ const AddOrder = () => {
     },
     initialData: [] as Product[],
   });
-  const { data: customers, isFetching: isFetchingCustomers } = useQuery({
+  const { data: customers } = useQuery({
     queryKey: ["customers", router.query.storeId],
     queryFn: async () => {
       const { data } = await axios.get<ListResponse<Customer>>(
@@ -80,17 +56,18 @@ const AddOrder = () => {
   const { mutate: createOrder, isLoading: isCreatingStock } = useMutation({
     mutationKey: ["order", "create-order", store?.id],
     mutationFn: async () => {
-      if (!selectedProducts.length) {
+      if (!items.length) {
         throw new Error("No product selected.");
       }
       if (!selectedCustomer) {
         throw new Error("No customer selected.");
       }
       const res = await axios.post(`api/orders/`, {
-        items: selectedProducts,
+        items,
         store: parseInt(router.query.storeId as string),
         customer: selectedCustomer,
         amount: 0,
+        commission,
       });
       return res.data as Order;
     },
@@ -109,13 +86,6 @@ const AddOrder = () => {
     },
   });
 
-  const selectProduct = handleSubmit((data) => {
-    reset();
-    setSelectedProducts((val) => [
-      ...val.filter((item) => item.product !== data.product),
-      data,
-    ]);
-  });
   return (
     <>
       <Head>
@@ -145,122 +115,94 @@ const AddOrder = () => {
         ) : role?.role === "OFFICER" ? (
           <Grid container spacing={2}>
             <Grid xs={12} md={5}>
-              <Box component="form" onSubmit={(e) => void selectProduct(e)}>
-                <Grid container spacing={2}>
-                  <Grid xs={12}>
-                    <Autocomplete
-                      disabled={isFetchingCustomers}
-                      sx={{ mb: 2 }}
-                      value={
-                        customers?.find(({ id }) => id === selectedCustomer) ??
-                        null
-                      }
-                      options={customers}
-                      onChange={(_, data) => {
-                        setselectedCustomer(data?.id);
-                      }}
-                      getOptionLabel={(option) => option.name}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Customer"
-                          placeholder="Select a Customer"
-                          InputLabelProps={{
-                            shrink: true,
-                          }}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  <Grid xs={12}>
-                    <Controller
-                      render={({ field: { onChange, value, ...field } }) => (
-                        <Autocomplete
-                          {...field}
-                          disabled={isFetching}
-                          value={
-                            products?.find(({ id }) => id === value) ?? null
-                          }
-                          options={products}
-                          onChange={(_, data) => {
-                            setValue("rate", data ? Number(data.price) : 0);
-                            onChange(data?.id);
-                          }}
-                          getOptionLabel={(option) => option.name}
-                          groupBy={(option) => option.group_name}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              label="Product"
-                              placeholder="Select a Product"
-                              InputLabelProps={{
-                                shrink: true,
-                              }}
-                              error={!!errors.product}
-                              helperText={errors.product?.message}
-                            />
-                          )}
-                        />
-                      )}
-                      name="product"
-                      control={control}
-                    />
-                  </Grid>
-                  <Grid xs={6}>
-                    <Controller
-                      name="quantity"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          onChange={(e) => field.onChange(+e.target.value)}
-                          label="Quantity"
-                          type="number"
-                          inputProps={{ min: 1 }}
-                          error={!!errors.quantity}
-                          helperText={errors.quantity?.message}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  <Grid xs={6}>
-                    <Controller
-                      name="rate"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          onChange={(e) => field.onChange(+e.target.value)}
-                          label="Rate"
-                          type="number"
-                          inputProps={{ min: 0 }}
-                          error={!!errors.rate}
-                          helperText={errors.rate?.message}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  <Grid xs={12} sx={{ textAlign: "right" }}>
-                    <Button type="submit" variant="text">
-                      Add Product
-                    </Button>
-                  </Grid>
-                </Grid>
-              </Box>
+              <Autocomplete
+                sx={{ mb: 2 }}
+                value={
+                  customers?.find(({ id }) => id === selectedCustomer) ?? null
+                }
+                options={customers}
+                onChange={(_, data) => {
+                  setselectedCustomer(data?.id);
+                }}
+                getOptionLabel={(option) => option.name}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Customer"
+                    placeholder="Select a Customer"
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                  />
+                )}
+              />{" "}
+              <Autocomplete
+                sx={{ mb: 2 }}
+                value={
+                  customers?.find(({ id }) => id === selectedCustomer) ?? null
+                }
+                options={customers}
+                onChange={(_, data) => {
+                  setselectedCustomer(data?.id);
+                }}
+                getOptionLabel={(option) => option.name}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Customer"
+                    placeholder="Select a Customer"
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                  />
+                )}
+              />{" "}
+              <Divider sx={{ my: 2, py: 1 }} />
+              <OrderItemForm
+                products={products}
+                items={items}
+                addItem={(item) => dispatch({ type: "ADD", payload: item })}
+              />
             </Grid>
             <Grid xs={12} md={7}>
               <Typography variant="h6" gutterBottom>
                 Products
               </Typography>
-              <ProductsTable
+              <OrderItemsTable
                 products={products}
-                selected={selectedProducts}
-                removeFromList={(id) =>
-                  setSelectedProducts((data) =>
-                    data.filter((item) => item.product !== id)
-                  )
-                }
+                selected={items}
+                commission={commission}
+                removeItem={(id) => dispatch({ type: "REMOVE", payload: id })}
               />
+              <Box
+                sx={{
+                  py: 2,
+                  display: "flex",
+                  justifyContent: "right",
+                  gap: 2,
+                  alignItems: "center",
+                }}
+              >
+                <Typography>Commission:</Typography>
+                <TextField
+                  aria-label="Comission"
+                  type="number"
+                  size="small"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">%</InputAdornment>
+                    ),
+                  }}
+                  sx={{ maxWidth: 160 }}
+                  inputProps={{
+                    min: 0,
+                    max: 100,
+                    style: { textAlign: "right" },
+                  }}
+                  value={commission}
+                  onChange={(e) => setCommission(+e.target.value)}
+                />
+              </Box>
 
               <Box
                 sx={{
@@ -282,7 +224,7 @@ const AddOrder = () => {
           </Grid>
         ) : (
           <Alert severity="error">
-            {"You don't have permission to add Re-Stock"}
+            {"You don't have permission to create new order."}
           </Alert>
         )}
       </Container>
@@ -291,73 +233,3 @@ const AddOrder = () => {
 };
 
 export default AddOrder;
-
-const ProductsTable = ({
-  selected,
-  products,
-  removeFromList,
-  immutable,
-}: {
-  products: Product[];
-  selected: z.infer<typeof schema>[];
-  removeFromList: (id: number) => void;
-  immutable?: boolean;
-}) => {
-  return (
-    <TableContainer component={Paper}>
-      <Table size="small" aria-label="products table">
-        <TableHead>
-          <TableRow>
-            <TableCell>#</TableCell>
-            <TableCell>Name</TableCell>
-            <TableCell align="center">Quantity</TableCell>
-            <TableCell align="right">Rate</TableCell>
-            {immutable ? null : <TableCell align="center">Actions</TableCell>}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {selected.map((row, i) => (
-            <TableRow
-              key={row.product}
-              sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-            >
-              <TableCell component="th" scope="row">
-                {i + 1}
-              </TableCell>
-              <TableCell component="th" scope="row">
-                {products.find(({ id }) => id === row.product)?.name}
-              </TableCell>
-              <TableCell align="center">{row.quantity}</TableCell>
-              <TableCell align="right">{row.rate}</TableCell>
-              {immutable ? null : (
-                <TableCell align="center">
-                  <IconButton
-                    size="small"
-                    aria-label="remove from list"
-                    onClick={() => removeFromList(row.product)}
-                  >
-                    <DeleteIcon color="error" />
-                  </IconButton>
-                </TableCell>
-              )}
-            </TableRow>
-          ))}
-          {selected.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={4} align="center" sx={{ py: 2 }}>
-                no product selected.
-              </TableCell>
-            </TableRow>
-          ) : null}
-          <TableRow>
-            <TableCell colSpan={2} />
-            <TableCell align="right">Order Total</TableCell>
-            <TableCell align="right">
-              {selected.reduce((acc, crr) => acc + crr.rate * crr.quantity, 0)}
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
-};

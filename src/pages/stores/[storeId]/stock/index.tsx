@@ -154,16 +154,9 @@ const ProductStockTable = () => {
 };
 
 const columns: MRT_ColumnDef<ProductStock>[] = [
-  {
-    accessorKey: "product.id",
-    header: "ID",
-    enableSorting: false,
-  },
-
-  {
-    accessorKey: "product.name",
-    header: "Name",
-  },
+  { accessorKey: "product.id", header: "ID", enableSorting: false },
+  { accessorKey: "product.name", header: "Name" },
+  { accessorKey: "product.pack_size", header: "Pack Size" },
   {
     accessorKey: "product.price",
     header: "Price",
