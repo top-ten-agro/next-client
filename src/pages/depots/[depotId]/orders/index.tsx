@@ -1,66 +1,67 @@
+import Head from "next/head";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/router";
+import Container from "@mui/material/Container";
+import PageToolbar from "@/components/PageToolbar";
+import { useDepot, useRole } from "@/lib/store/depot";
+import Box from "@mui/material/Box";
+import { useQuery } from "@tanstack/react-query";
+import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import MaterialReactTable from "material-react-table";
 import DoneIcon from "@mui/icons-material/Done";
 import CloseIcon from "@mui/icons-material/Close";
-import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import type {
   MRT_ColumnDef,
   MRT_ColumnFiltersState,
   MRT_PaginationState,
   MRT_SortingState,
 } from "material-react-table";
-import type { ReStock, ListResponse } from "@/lib/types";
-import Head from "next/head";
-import Container from "@mui/material/Container";
-import Box from "@mui/material/Box";
-import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
+import type { Order, ListResponse } from "@/lib/types";
 import dayjs from "dayjs";
-import PageToolbar from "@/components/PageToolbar";
+import { toBdt } from "@/lib/formatter";
 
-const Restocks = () => {
-  const store = useCurrentStore((state) => state.store);
-  const role = useStoreRole((state) => state.role);
-
+const Orders = () => {
+  const router = useRouter();
+  const depot = useDepot((state) => state.depot);
+  const role = useRole((state) => state.role);
   return (
     <>
       <Head>
-        <title>Re-Stocks | TopTen</title>
+        <title>Orders | TopTen</title>
       </Head>
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          backHref={store?.id ? `/stores/${store.id}` : undefined}
+          heading="Orders"
+          backHref={`/depots/${router.query.depotId as string}`}
           breadcrumbItems={[
-            { name: "Stores", path: `/stores` },
+            { name: "Depots", path: `/depots` },
             {
-              name: store?.name ?? "store",
-              path: `/stores/${store?.id ?? ""}`,
+              name: depot?.name ?? "depot",
+              path: `/depots/${router.query.depotId as string}`,
             },
-            { name: "Re-Stocks" },
+            { name: "Orders" },
           ]}
           action={
-            role?.role === "MANAGER"
+            role?.role === "OFFICER"
               ? {
-                  text: "New Re-Stock",
-                  href: `/stores/${store?.id ?? ""}/restocks/add`,
+                  text: "New Order",
+                  href: `/depots/${router.query.depotId as string}/orders/add`,
                 }
               : undefined
           }
-          heading="Re-Stocks"
         />
-
-        <ReStockTable />
+        <OrdersTable />
       </Container>
     </>
   );
 };
 
-export default Restocks;
+export default Orders;
 
-const ReStockTable = () => {
+const OrdersTable = () => {
   const axios = useAxiosAuth();
   const router = useRouter();
+  const role = useRole((state) => state.role);
   const [count, setCount] = useState(0);
 
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>(
@@ -74,30 +75,35 @@ const ReStockTable = () => {
     pageSize: 10,
   });
 
-  const { data, isLoading, isError, isFetching } = useQuery({
-    queryKey: [
-      "re-stock",
-      router.query.storeId,
+  const { data, isLoading, isError, isFetching } = useQuery(
+    [
+      "orders",
+      router.query.depotId,
       columnFilters,
       pagination.pageIndex,
       pagination.pageSize,
       sorting,
+      role?.role,
     ],
-    queryFn: async () => {
+    async () => {
+      if (!role) {
+        throw new Error("Role not found.");
+      }
       const params = new URLSearchParams({
-        omit: "items,store",
-        expand: "created_by",
-        store: router.query.storeId as string,
+        expand: "created_by,customer",
+        depot: router.query.depotId as string,
         per_page: `${pagination.pageSize}`,
         page: `${pagination.pageIndex + 1}`,
       });
+      if (role.role === "OFFICER") {
+        params.set("created_by", `${role.user}`);
+      }
       if (sorting.length) {
         params.set(
           "ordering",
           sorting.map((item) => `${item.desc ? "-" : ""}${item.id}`).join()
         );
       }
-
       columnFilters.forEach((item) => {
         if (typeof item.value === "boolean") {
           return void params.append(item.id, item.value ? "true" : "false");
@@ -106,21 +112,34 @@ const ReStockTable = () => {
       });
 
       const { data } = await axios
-        .get<ListResponse<ReStock>>(`api/restocks/?${params.toString()}`)
+        .get<ListResponse<Order>>(`api/orders/?${params.toString()}`)
         .catch((error) => {
           throw error;
         });
       return data;
     },
-    onSuccess: (data) => setCount(data.count),
-  });
+    {
+      onSuccess: (data) => setCount(data.count),
+      enabled: !!role,
+    }
+  );
 
-  const columns = useMemo<MRT_ColumnDef<ReStock>[]>(
+  const columns = useMemo<MRT_ColumnDef<Order>[]>(
     () => [
       { accessorKey: "id", header: "ID", enableSorting: false },
       {
+        accessorKey: "customer.id",
+        header: "Customer ID",
+        enableSorting: false,
+      },
+      {
+        accessorKey: "customer.name",
+        header: "Customer",
+        enableSorting: false,
+      },
+      {
         accessorKey: "created_by.email",
-        header: "Created By",
+        header: "Officer",
       },
       {
         accessorKey: "approved",
@@ -134,6 +153,24 @@ const ReStockTable = () => {
         muiTableHeadCellProps: { align: "center" },
         muiTableBodyCellProps: { align: "center", sx: { p: 0 } },
         enableColumnFilter: false,
+      },
+      {
+        accessorKey: "subtotal",
+        header: "Subtotal",
+        enableColumnFilter: false,
+        Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
+        muiTableHeadCellProps: { align: "right" },
+        muiTableBodyCellProps: { align: "right" },
+      },
+      {
+        header: "Total",
+        accessorKey: "total",
+        enableColumnFilter: false,
+        Cell: ({ cell }) => {
+          return toBdt(+cell.getValue<string>());
+        },
+        muiTableHeadCellProps: { align: "right" },
+        muiTableBodyCellProps: { align: "right" },
       },
       {
         accessorKey: "created_at",
@@ -155,7 +192,7 @@ const ReStockTable = () => {
           width: "100%",
         }}
       >
-        <MaterialReactTable<ReStock>
+        <MaterialReactTable<Order>
           columns={columns}
           data={data?.results ?? []}
           enableGlobalFilter={false}
@@ -178,10 +215,10 @@ const ReStockTable = () => {
             sx: { cursor: "pointer" },
             onClick: () =>
               void router.push({
-                pathname: "/stores/[storeId]/restocks/[restockId]",
+                pathname: "/depots/[depotId]/orders/[orderId]",
                 query: {
                   ...router.query,
-                  restockId: row.getValue<string>("id"),
+                  orderId: row.getValue<string>("id"),
                 },
               }),
           })}
@@ -196,7 +233,10 @@ const ReStockTable = () => {
           defaultColumn={{
             enableGlobalFilter: false,
           }}
-          initialState={{ density: "compact" }}
+          initialState={{
+            density: "compact",
+            columnVisibility: { "customer.id": false, subtotal: false },
+          }}
         />
       </Box>
     </Box>

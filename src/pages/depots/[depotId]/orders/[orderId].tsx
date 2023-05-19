@@ -21,7 +21,7 @@ import PageToolbar from "@/components/PageToolbar";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import Typography from "@mui/material/Typography";
 import { orderItemsReducer } from "@/lib/reducers/orderItems";
-import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
+import { useDepot, useRole } from "@/lib/store/depot";
 import type {
   ListResponse,
   Product,
@@ -34,16 +34,16 @@ import OrderItemsTable from "@/components/OrderItemsTable";
 const OrderPage = () => {
   const router = useRouter();
   const axios = useAxiosAuth();
-  const store = useCurrentStore((state) => state.store);
-  const role = useStoreRole((state) => state.role);
+  const depot = useDepot((state) => state.depot);
+  const role = useRole((state) => state.role);
   const [items, dispatch] = useReducer(orderItemsReducer, []);
   const [commission, setCommission] = useState(0);
 
   const { data: products } = useQuery({
-    queryKey: ["products", router.query.storeId],
+    queryKey: ["products", router.query.depotId],
     queryFn: async () => {
       const { data } = await axios.get<ListResponse<Product>>(
-        `api/products/?stores=${router.query.storeId as string}`
+        `api/products/?depots=${router.query.depotId as string}`
       );
       return data.results;
     },
@@ -83,20 +83,20 @@ const OrderPage = () => {
     },
   });
   const { data: balance } = useQuery({
-    queryKey: ["balance", router.query.storeId, order?.customer.id],
+    queryKey: ["balance", router.query.depotId, order?.customer.id],
     queryFn: async () => {
-      if (typeof router.query.storeId !== "string" || !order) {
+      if (typeof router.query.depotId !== "string" || !order) {
         throw new Error("Not enough data");
       }
       const { data } = await axios.get<ListResponse<CustomerBalance>>(
-        `api/balances/?store=${router.query.storeId}&customer=${order.customer.id}`
+        `api/balances/?depot=${router.query.depotId}&customer=${order.customer.id}`
       );
       return data.results[0];
     },
     enabled: !!order,
   });
   const { mutate: updateOrder, isLoading: isUpdatingStock } = useMutation({
-    mutationKey: ["order", "update-order", store?.id],
+    mutationKey: ["order", "update-order", depot?.id],
     mutationFn: async () => {
       if (!order) return;
       if (order.approved) {
@@ -107,7 +107,7 @@ const OrderPage = () => {
       }
       const res = await axios.put(`api/orders/${order.id}/`, {
         items,
-        store: order.store,
+        depot: order.depot,
         customer: order.customer.id,
         commission,
       });
@@ -136,7 +136,7 @@ const OrderPage = () => {
     },
     onSuccess: () => {
       void router.push({
-        pathname: "/stores/[storeId]/orders",
+        pathname: "/depots/[depotId]/orders",
         query: { ...router.query },
       });
     },
@@ -202,17 +202,17 @@ const OrderPage = () => {
 
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          backHref={`/stores/${router.query.storeId as string}/orders`}
+          backHref={`/depots/${router.query.depotId as string}/orders`}
           heading={`Order #${order?.id ?? ""}`}
           breadcrumbItems={[
-            { name: "Stores", path: `/stores` },
+            { name: "Depots", path: `/depots` },
             {
-              name: store?.name ?? "store",
-              path: `/stores/${store?.id ?? ""}`,
+              name: depot?.name ?? "depot",
+              path: `/depots/${depot?.id ?? ""}`,
             },
             {
               name: "Orders",
-              path: `/stores/${router.query.storeId as string}/orders`,
+              path: `/depots/${router.query.depotId as string}/orders`,
             },
             { name: `Order #${order?.id ?? ""}` },
           ]}
@@ -227,8 +227,8 @@ const OrderPage = () => {
                 <ListItem sx={{ p: 0 }}>
                   <ListItemButton
                     LinkComponent={NextLink}
-                    href={`/stores/${
-                      router.query.storeId as string
+                    href={`/depots/${
+                      router.query.depotId as string
                     }/customers/${balance?.id ?? ""}`}
                   >
                     <ListItemText

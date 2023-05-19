@@ -1,6 +1,6 @@
 import type { User } from "next-auth";
 
-export type Store = {
+export type Depot = {
   id: number;
   name: string;
   address: string;
@@ -29,7 +29,7 @@ export type Product = {
 export type ProductStock = {
   id: number;
   product: Product;
-  store: number;
+  depot: number;
   quantity: number;
   created_at: string;
   updated_at: string;
@@ -38,7 +38,7 @@ export type ProductStock = {
 export type Role = {
   id: number;
   role: "MANAGER" | "DIRECTOR" | "OFFICER";
-  store: number;
+  depot: number;
   user: number;
   created_at: string;
   updated_at: string;
@@ -47,7 +47,7 @@ export type UserRole = Prettify<Omit<Role, "user"> & { user: User }>;
 
 export type ReStock = {
   id: number;
-  store: number;
+  depot: number;
   approved: boolean;
   created_by: Pick<User, "id" | "email">;
   created_at: string;
@@ -69,7 +69,7 @@ export type Balance = {
   cash_in: string;
   sales: string;
   customer: number;
-  store: number;
+  depot: number;
   created_at: string;
   updated_at: string;
 };
@@ -84,7 +84,7 @@ export type Order = {
   total: string;
   commission: string;
   approved: boolean;
-  store: number;
+  depot: number;
   customer: Prettify<Pick<Customer, "id" | "name">>;
   items: Array<{ product: number; quantity: number; rate: string }>;
   created_at: string;
@@ -100,7 +100,7 @@ export type Transaction = Prettify<{
   title: string;
   note: string | null;
   approved: boolean;
-  store: number;
+  depot: number;
   customer: Pick<Customer, "id" | "name"> | null;
   created_by: Pick<User, "id" | "email">;
   created_at: string;

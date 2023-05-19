@@ -12,7 +12,7 @@ import DoneIcon from "@mui/icons-material/Done";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
+import { useDepot, useRole } from "@/lib/store/depot";
 import { toBdt } from "@/lib/formatter";
 import PageToolbar from "@/components/PageToolbar";
 import type {
@@ -25,8 +25,8 @@ import type { Transaction, ListResponse } from "@/lib/types";
 
 const Transactions = () => {
   const router = useRouter();
-  const store = useCurrentStore((state) => state.store);
-  const role = useStoreRole((state) => state.role);
+  const depot = useDepot((state) => state.depot);
+  const role = useRole((state) => state.role);
   return (
     <>
       <Head>
@@ -35,12 +35,12 @@ const Transactions = () => {
       <Container sx={{ mt: 2 }}>
         <PageToolbar
           heading="Transactions"
-          backHref={`/stores/${router.query.storeId as string}`}
+          backHref={`/depots/${router.query.depotId as string}`}
           breadcrumbItems={[
-            { name: "Stores", path: `/stores` },
+            { name: "Depots", path: `/depots` },
             {
-              name: store?.name ?? "store",
-              path: `/stores/${router.query.storeId as string}`,
+              name: depot?.name ?? "depot",
+              path: `/depots/${router.query.depotId as string}`,
             },
             { name: "Transactions" },
           ]}
@@ -57,8 +57,8 @@ const Transactions = () => {
                       </Typography>
                     </>
                   ),
-                  href: `/stores/${
-                    router.query.storeId as string
+                  href: `/depots/${
+                    router.query.depotId as string
                   }/transactions/add`,
                 }
               : undefined
@@ -91,7 +91,7 @@ const TransactionsTable = () => {
   const { data, isLoading, isError, isFetching } = useQuery({
     queryKey: [
       "transactions",
-      router.query.storeId,
+      router.query.depotId,
       columnFilters,
       pagination.pageIndex,
       pagination.pageSize,
@@ -100,7 +100,7 @@ const TransactionsTable = () => {
     queryFn: async () => {
       const params = new URLSearchParams({
         expand: "created_by,customer",
-        store: router.query.storeId as string,
+        depot: router.query.depotId as string,
         per_page: `${pagination.pageSize}`,
         page: `${pagination.pageIndex + 1}`,
       });
@@ -237,7 +237,7 @@ const TransactionsTable = () => {
             sx: { cursor: "pointer" },
             onClick: () =>
               void router.push({
-                pathname: "/stores/[storeId]/transactions/[txnId]",
+                pathname: "/depots/[depotId]/transactions/[txnId]",
                 query: {
                   ...router.query,
                   txnId: row.getValue<string>("id"),

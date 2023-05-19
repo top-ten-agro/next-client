@@ -19,9 +19,9 @@ import PeopleIcon from "@mui/icons-material/People";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 
 import type { AxiosInstance } from "axios";
-import type { Store } from "@/lib/types";
+import type { Depot } from "@/lib/types";
 import PageToolbar from "@/components/PageToolbar";
-import { useStoreRole } from "@/lib/store/stores";
+import { useRole } from "@/lib/store/depot";
 import { useSession } from "next-auth/react";
 
 const routes = [
@@ -32,46 +32,46 @@ const routes = [
   { name: "Transactions", path: "transactions", icon: <MoneyIcon /> },
 ];
 
-const fetchStore = async (axios: AxiosInstance, id: string) => {
+const fetchDepot = async (axios: AxiosInstance, id: string) => {
   const { data } = await axios
-    .get<Store>(`api/stores/${id}/`)
+    .get<Depot>(`api/depots/${id}/`)
     .catch((error) => {
       throw error;
     });
   return data;
 };
 
-const StorePage = () => {
+const DepotPage = () => {
   const { query } = useRouter();
-  const role = useStoreRole((state) => state.role);
+  const role = useRole((state) => state.role);
   const { data: session } = useSession({ required: true });
   const axios = useAxiosAuth();
-  const { data: store, isLoading } = useQuery({
-    queryKey: ["store", query.storeId],
-    queryFn: () => fetchStore(axios, query.storeId as string),
-    enabled: !!query.storeId,
+  const { data: depot, isLoading } = useQuery({
+    queryKey: ["depot", query.depotId],
+    queryFn: () => fetchDepot(axios, query.depotId as string),
+    enabled: !!query.depotId,
   });
 
   return (
     <>
       <Head>
         <title>{`${
-          store ? store.name : isLoading ? "loading..." : ""
+          depot ? depot.name : isLoading ? "loading..." : ""
         } | Top Ten`}</title>
-        <meta name="description" content={store?.address} />
+        <meta name="description" content={depot?.address} />
       </Head>
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          backHref="/stores"
-          heading={isLoading ? "loading..." : store?.name ?? "Store"}
+          backHref="/depots"
+          heading={isLoading ? "loading..." : depot?.name ?? "Depot"}
           breadcrumbItems={[
-            { name: "Stores", path: "/stores" },
-            { name: store ? store.name : isLoading ? "loading..." : "" },
+            { name: "Depots", path: "/depots" },
+            { name: depot ? depot.name : isLoading ? "loading..." : "" },
           ]}
         />
 
         {isLoading ? <LinearProgress /> : null}
-        {store ? (
+        {depot ? (
           <Grid container spacing={2}>
             <Grid xs={12}>
               <ListItem>
@@ -91,7 +91,7 @@ const StorePage = () => {
                   <ListItem disablePadding>
                     <ListItemButton
                       LinkComponent={NextLink}
-                      href={`/stores/${query.storeId as string}/${route.path}`}
+                      href={`/depots/${query.depotId as string}/${route.path}`}
                     >
                       <ListItemIcon>{route.icon}</ListItemIcon>
                       <ListItemText>{route.name}</ListItemText>
@@ -107,4 +107,4 @@ const StorePage = () => {
   );
 };
 
-export default StorePage;
+export default DepotPage;

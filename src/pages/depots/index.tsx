@@ -11,39 +11,39 @@ import LinearProgress from "@mui/material/LinearProgress";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import PageToolbar from "@/components/PageToolbar";
 import type { AxiosInstance } from "axios";
-import type { ListResponse, Store } from "@/lib/types";
+import type { ListResponse, Depot } from "@/lib/types";
 
-const fetchStores = async (axios: AxiosInstance) => {
+const fetchDepots = async (axios: AxiosInstance) => {
   const { data } = await axios
-    .get<ListResponse<Store>>("api/stores/")
+    .get<ListResponse<Depot>>("api/depots/")
     .catch((error) => {
       throw error;
     });
   return data;
 };
 
-const Stores = () => {
+const Depots = () => {
   const axios = useAxiosAuth();
   const {
-    data: storesRes,
+    data: depotsRes,
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["stores"],
-    queryFn: () => fetchStores(axios),
+    queryKey: ["depots"],
+    queryFn: () => fetchDepots(axios),
   });
 
   return (
     <>
       <Head>
-        <title>Stores | Top Ten</title>
+        <title>Depots | Top Ten</title>
       </Head>
       <Container sx={{ mt: 2 }}>
         <PageToolbar
           backHref="/"
-          heading="Stores"
-          breadcrumbItems={[{ name: "Stores" }]}
+          heading="Depots"
+          breadcrumbItems={[{ name: "Depots" }]}
         />
 
         {isLoading ? <LinearProgress /> : null}
@@ -52,29 +52,29 @@ const Stores = () => {
             {error instanceof Error ? error.message : "An error occured."}
           </Typography>
         ) : null}
-        {storesRes ? (
+        {depotsRes ? (
           <Grid container spacing={2}>
-            {storesRes.count === 0 ? (
+            {depotsRes.count === 0 ? (
               <Grid xs={12}>
                 <Card>
                   <CardContent>
-                    <Typography>No stores available</Typography>
+                    <Typography>No depots available</Typography>
                   </CardContent>
                 </Card>
               </Grid>
             ) : null}
-            {storesRes.results.map((store) => (
-              <Grid key={store.id} xs={12} sm={6} md={4}>
+            {depotsRes.results.map((depot) => (
+              <Grid key={depot.id} xs={12} sm={6} md={4}>
                 <Card>
                   <CardActionArea
                     LinkComponent={NextLink}
-                    href={`/stores/${store.id}`}
+                    href={`/depots/${depot.id}`}
                   >
                     <CardContent>
                       <Typography fontSize={18} fontWeight={"bold"}>
-                        {store.name}
+                        {depot.name}
                       </Typography>
-                      <Typography>{store.address}</Typography>
+                      <Typography>{depot.address}</Typography>
                     </CardContent>
                   </CardActionArea>
                 </Card>
@@ -87,4 +87,4 @@ const Stores = () => {
   );
 };
 
-export default Stores;
+export default Depots;

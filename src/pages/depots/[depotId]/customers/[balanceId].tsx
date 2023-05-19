@@ -33,7 +33,7 @@ import PageToolbar from "@/components/PageToolbar";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import MaterialReactTable from "material-react-table";
 import type { CustomerBalance, UserRole } from "@/lib/types";
-import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
+import { useDepot, useRole } from "@/lib/store/depot";
 import { toBdt } from "@/lib/formatter";
 import type {
   MRT_ColumnDef,
@@ -47,8 +47,8 @@ import { AxiosError } from "axios";
 const CustomerPage = () => {
   const axios = useAxiosAuth();
   const router = useRouter();
-  const store = useCurrentStore((state) => state.store);
-  const role = useStoreRole((state) => state.role?.role);
+  const depot = useDepot((state) => state.depot);
+  const role = useRole((state) => state.role?.role);
   const [value, setValue] = useState("1");
   const [officer, setOfficer] = useState("");
 
@@ -76,10 +76,10 @@ const CustomerPage = () => {
   );
 
   const { data: roles } = useQuery(
-    ["roles", router.query.storeId],
+    ["roles", router.query.depotId],
     async () => {
       const { data } = await axios.get<UserRole[]>(
-        `api/stores/${router.query.storeId as string}/roles/?expand=user`
+        `api/depots/${router.query.depotId as string}/roles/?expand=user`
       );
       return data.filter((role) => role.role === "OFFICER");
     },
@@ -110,17 +110,17 @@ const CustomerPage = () => {
       </Head>
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          backHref={`/stores/${router.query.storeId as string}/customers`}
+          backHref={`/depots/${router.query.depotId as string}/customers`}
           heading={balance?.customer.name ?? "Customer"}
           breadcrumbItems={[
-            { name: "Stores", path: `/stores` },
+            { name: "Depots", path: `/depots` },
             {
-              name: store?.name ?? "store",
-              path: `/stores/${router.query.storeId as string}`,
+              name: depot?.name ?? "depot",
+              path: `/depots/${router.query.depotId as string}`,
             },
             {
               name: "Customers",
-              path: `/stores/${router.query.storeId as string}/customers`,
+              path: `/depots/${router.query.depotId as string}/customers`,
             },
             { name: balance?.customer.name ?? "Customer" },
           ]}
@@ -276,7 +276,7 @@ const OrdersTable = ({ customerId }: { customerId: number }) => {
     queryKey: [
       "orders",
       customerId,
-      router.query.storeId,
+      router.query.depotId,
       columnFilters,
       pagination.pageIndex,
       pagination.pageSize,
@@ -285,7 +285,7 @@ const OrdersTable = ({ customerId }: { customerId: number }) => {
     queryFn: async () => {
       const params = new URLSearchParams({
         expand: "created_by",
-        store: router.query.storeId as string,
+        depot: router.query.depotId as string,
         customer: `${customerId}`,
         per_page: `${pagination.pageSize}`,
         page: `${pagination.pageIndex + 1}`,
@@ -394,7 +394,7 @@ const OrdersTable = ({ customerId }: { customerId: number }) => {
             sx: { cursor: "pointer" },
             onClick: () =>
               void router.push({
-                pathname: "/stores/[storeId]/orders/[orderId]",
+                pathname: "/depots/[depotId]/orders/[orderId]",
                 query: {
                   ...router.query,
                   orderId: row.getValue<string>("id"),
@@ -442,7 +442,7 @@ const TransactionsTable = ({ customerId }: { customerId: number }) => {
     queryKey: [
       "transactions",
       customerId,
-      router.query.storeId,
+      router.query.depotId,
       columnFilters,
       pagination.pageIndex,
       pagination.pageSize,
@@ -452,7 +452,7 @@ const TransactionsTable = ({ customerId }: { customerId: number }) => {
       const params = new URLSearchParams({
         expand: "created_by",
         customer: `${customerId}`,
-        store: router.query.storeId as string,
+        depot: router.query.depotId as string,
         per_page: `${pagination.pageSize}`,
         page: `${pagination.pageIndex + 1}`,
       });
@@ -563,7 +563,7 @@ const TransactionsTable = ({ customerId }: { customerId: number }) => {
             sx: { cursor: "pointer" },
             onClick: () =>
               void router.push({
-                pathname: "/stores/[storeId]/transactions/[txnId]",
+                pathname: "/depots/[depotId]/transactions/[txnId]",
                 query: {
                   ...router.query,
                   txnId: row.getValue<string>("id"),

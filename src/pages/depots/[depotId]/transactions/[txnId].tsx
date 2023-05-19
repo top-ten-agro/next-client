@@ -25,7 +25,7 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import PageToolbar from "@/components/PageToolbar";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
+import { useDepot, useRole } from "@/lib/store/depot";
 import type { Transaction } from "@/lib/types";
 import { AxiosError } from "axios";
 import { useMemo } from "react";
@@ -42,8 +42,8 @@ const schema = z.object({
 const TransactionPage = () => {
   const router = useRouter();
   const axios = useAxiosAuth();
-  const store = useCurrentStore((state) => state.store);
-  const role = useStoreRole((state) => state.role);
+  const depot = useDepot((state) => state.depot);
+  const role = useRole((state) => state.role);
 
   const {
     control,
@@ -95,7 +95,7 @@ const TransactionPage = () => {
   });
 
   const { mutate: submitTrx, isLoading: isUpdatingStock } = useMutation({
-    mutationKey: ["transaction", "create-transaction", router.query.storeId],
+    mutationKey: ["transaction", "create-transaction", router.query.depotId],
     mutationFn: async (props: z.infer<typeof schema>) => {
       if (!transaction || transaction.approved === true) {
         throw new Error("Cannot update this transaction.");
@@ -104,7 +104,7 @@ const TransactionPage = () => {
       const res = await axios.put(
         `api/transactions/${router.query.txnId as string}/`,
         {
-          store: transaction.store,
+          depot: transaction.depot,
           customer: transaction.customer?.id,
           title: props.title,
           category: props.category,
@@ -140,7 +140,7 @@ const TransactionPage = () => {
       },
       onSuccess: () => {
         void router.push({
-          pathname: "/stores/[storeId]/transactions",
+          pathname: "/depots/[depotId]/transactions",
           query: { ...router.query },
         });
       },
@@ -211,17 +211,17 @@ const TransactionPage = () => {
 
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          backHref={`/stores/${router.query.storeId as string}/transactions`}
+          backHref={`/depots/${router.query.depotId as string}/transactions`}
           heading={`Transaction #${transaction?.id ?? ""}`}
           breadcrumbItems={[
-            { name: "Stores", path: `/stores` },
+            { name: "Depots", path: `/depots` },
             {
-              name: store?.name ?? "store",
-              path: `/stores/${store?.id ?? ""}`,
+              name: depot?.name ?? "depot",
+              path: `/depots/${depot?.id ?? ""}`,
             },
             {
               name: "Transactions",
-              path: `/stores/${router.query.storeId as string}/transactions`,
+              path: `/depots/${router.query.depotId as string}/transactions`,
             },
             { name: `Transaction #${transaction?.id ?? ""}` },
           ]}
@@ -390,8 +390,8 @@ const TransactionPage = () => {
                   <ListItem sx={{ p: 0 }}>
                     <ListItemButton
                       LinkComponent={NextLink}
-                      href={`/stores/${
-                        router.query.storeId as string
+                      href={`/depots/${
+                        router.query.depotId as string
                       }/customers/${transaction.customer.id ?? ""}`}
                     >
                       <ListItemText

@@ -17,7 +17,7 @@ import ListItemText from "@mui/material/ListItemText";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import StoresContext from "@/components/StoresContext";
+import DepotContext from "@/components/DepotContext";
 import type { Dispatch, SetStateAction, ReactNode } from "react";
 
 //icons
@@ -43,7 +43,7 @@ const DrawerHeader = styled("div")(({ theme }) => ({
 
 const routes = [
   { path: "/", name: "Home", icon: <HomeIcon /> },
-  { path: "/stores", name: "Stores", icon: <StoreIcon /> },
+  { path: "/depots", name: "Depots", icon: <StoreIcon /> },
   { path: "/products", name: "Products", icon: <CategoryIcon /> },
   { path: "/customers", name: "Customers", icon: <PeopleIcon /> },
   { path: "/orders", name: "Orders", icon: <ReceiptIcon /> },
@@ -107,7 +107,7 @@ export const DefaultLayout = ({ children }: { children: ReactNode }) => {
       />
       <Box sx={{ flexGrow: 1, bgcolor: "background.default" }}>
         <Toolbar />
-        <StoresContext>{children}</StoresContext>
+        <DepotContext>{children}</DepotContext>
       </Box>
     </Box>
   );

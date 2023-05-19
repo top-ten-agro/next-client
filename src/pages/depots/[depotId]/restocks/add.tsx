@@ -11,7 +11,7 @@ import LinearProgress from "@mui/material/LinearProgress";
 import Grid from "@mui/material/Unstable_Grid2";
 import PageToolbar from "@/components/PageToolbar";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
+import { useDepot, useRole } from "@/lib/store/depot";
 import type { ListResponse, Product, ReStock } from "@/lib/types";
 import { restockItemsReducer } from "@/lib/reducers/restockItems";
 import RestockItemForm from "@/components/RestockItemForm";
@@ -20,9 +20,9 @@ import RestockItemsTable from "@/components/RestockItemsTable";
 const AddReStock = () => {
   const router = useRouter();
   const axios = useAxiosAuth();
-  const store = useCurrentStore((state) => state.store);
-  const role = useStoreRole((state) => state.role);
-  const isRoleLoading = useStoreRole((state) => state.isLoading);
+  const depot = useDepot((state) => state.depot);
+  const role = useRole((state) => state.role);
+  const isRoleLoading = useRole((state) => state.isLoading);
   const [items, dispatch] = useReducer(restockItemsReducer, []);
   const { data: products } = useQuery({
     queryKey: ["all-products"],
@@ -36,22 +36,22 @@ const AddReStock = () => {
   });
 
   const { mutate: createRestock, isLoading } = useMutation({
-    mutationKey: ["new-restock", store?.id],
+    mutationKey: ["new-restock", depot?.id],
     mutationFn: async () => {
-      if (!store?.id) return;
+      if (!depot?.id) return;
       if (!items.length) {
         throw new Error("No product selected.");
       }
       const { data } = await axios.post<ReStock>("api/restocks/", {
         items,
-        store: store?.id,
+        depot: depot?.id,
       });
       return data;
     },
     onSuccess: (data) => {
       if (!data) return;
       void router.push({
-        pathname: "/stores/[storeId]/restocks/[restockId]",
+        pathname: "/depots/[depotId]/restocks/[restockId]",
         query: {
           ...router.query,
           restockId: data.id,
@@ -71,17 +71,17 @@ const AddReStock = () => {
 
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          backHref={`/stores/${router.query.storeId as string}/restocks`}
+          backHref={`/depots/${router.query.depotId as string}/restocks`}
           heading="New Re-Stock"
           breadcrumbItems={[
-            { name: "Stores", path: `/stores` },
+            { name: "Depots", path: `/depots` },
             {
-              name: store?.name ?? "store",
-              path: `/stores/${store?.id ?? ""}`,
+              name: depot?.name ?? "depot",
+              path: `/depots/${depot?.id ?? ""}`,
             },
             {
               name: "Re-Stocks",
-              path: `/stores/${router.query.storeId as string}/restocks`,
+              path: `/depots/${router.query.depotId as string}/restocks`,
             },
             { name: "Add" },
           ]}

@@ -22,7 +22,7 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import PageToolbar from "@/components/PageToolbar";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
+import { useDepot, useRole } from "@/lib/store/depot";
 import type { Transaction, Customer } from "@/lib/types";
 
 type PartialBalance = { customer: Pick<Customer, "id" | "name"> };
@@ -39,9 +39,9 @@ const schema = z.object({
 const AddTransaction = () => {
   const router = useRouter();
   const axios = useAxiosAuth();
-  const store = useCurrentStore((state) => state.store);
-  const role = useStoreRole((state) => state.role);
-  const isRoleLoading = useStoreRole((state) => state.isLoading);
+  const depot = useDepot((state) => state.depot);
+  const role = useRole((state) => state.role);
+  const isRoleLoading = useRole((state) => state.isLoading);
 
   const {
     control,
@@ -59,11 +59,11 @@ const AddTransaction = () => {
   });
 
   const { data: customers, isFetching: isFetchingCustomers } = useQuery(
-    ["entry-balances", router.query.storeId],
+    ["entry-balances", router.query.depotId],
     async () => {
-      const storeId = router.query.storeId as string;
+      const depotId = router.query.depotId as string;
       const { data } = await axios.get<PartialBalance[]>(
-        `api/stores/${storeId}/customers/?expand=customer&fields=customer.id,customer.name`
+        `api/depots/${depotId}/customers/?expand=customer&fields=customer.id,customer.name`
       );
       return data.map((item) => item.customer);
     },
@@ -71,10 +71,10 @@ const AddTransaction = () => {
   );
 
   const { mutate: submitTrx, isLoading: isCreatingStock } = useMutation({
-    mutationKey: ["transaction", "create-transaction", router.query.storeId],
+    mutationKey: ["transaction", "create-transaction", router.query.depotId],
     mutationFn: async (props: z.infer<typeof schema>) => {
       const res = await axios.post(`api/transactions/`, {
-        store: parseInt(router.query.storeId as string),
+        depot: parseInt(router.query.depotId as string),
         title: props.title,
         category: props.category,
         customer: props.customer,
@@ -87,7 +87,7 @@ const AddTransaction = () => {
     onSuccess: (data) => {
       if (!data) return;
       void router.push({
-        pathname: "/stores/[storeId]/transactions/[txnId]",
+        pathname: "/depots/[depotId]/transactions/[txnId]",
         query: {
           ...router.query,
           txnId: data.id,
@@ -107,17 +107,17 @@ const AddTransaction = () => {
 
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          backHref={`/stores/${router.query.storeId as string}/transactions`}
+          backHref={`/depots/${router.query.depotId as string}/transactions`}
           heading={`Add Transaction`}
           breadcrumbItems={[
-            { name: "Stores", path: `/stores` },
+            { name: "Depots", path: `/depots` },
             {
-              name: store?.name ?? "store",
-              path: `/stores/${store?.id ?? ""}`,
+              name: depot?.name ?? "depot",
+              path: `/depots/${depot?.id ?? ""}`,
             },
             {
               name: "Transactions",
-              path: `/stores/${router.query.storeId as string}/transactions`,
+              path: `/depots/${router.query.depotId as string}/transactions`,
             },
             { name: `Add Transaction` },
           ]}

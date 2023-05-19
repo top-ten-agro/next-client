@@ -1,54 +1,56 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { useState } from "react";
 import Head from "next/head";
-import { useRouter } from "next/router";
-import { useQuery } from "@tanstack/react-query";
-import MaterialReactTable from "material-react-table";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
-import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { useCurrentStore } from "@/lib/store/stores";
 import PageToolbar from "@/components/PageToolbar";
-import type { ListResponse, ProductStock } from "@/lib/types";
+import { useDepot, useRole } from "@/lib/store/depot";
+import { useRouter } from "next/router";
+import { useQuery } from "@tanstack/react-query";
+import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
+import MaterialReactTable from "material-react-table";
 import type {
   MRT_ColumnDef,
   MRT_ColumnFiltersState,
   MRT_PaginationState,
   MRT_SortingState,
 } from "material-react-table";
+import type { CustomerBalance, ListResponse } from "@/lib/types";
 import { toBdt } from "@/lib/formatter";
 
-const StockPage = () => {
-  const store = useCurrentStore((state) => state.store);
+const Customers = () => {
   const router = useRouter();
+  const depot = useDepot((state) => state.depot);
 
   return (
     <>
       <Head>
-        <title>{`Stock - ${store?.name ?? "Store"} | Top Ten`}</title>
+        <title>Customers | TopTen</title>
       </Head>
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          heading="Stock"
-          backHref={store?.id ? `/stores/${store.id}` : undefined}
+          heading="Customers"
+          backHref={`/depots/${router.query.depotId as string}`}
           breadcrumbItems={[
-            { name: "Stores", path: `/stores` },
+            { name: "Depots", path: `/depots` },
             {
-              name: store?.name ?? "store",
-              path: `/stores/${router.query.storeId as string}`,
+              name: depot?.name ?? "depot",
+              path: `/depots/${router.query.depotId as string}`,
             },
-            { name: "Stock" },
+            { name: "Customers" },
           ]}
         />
-
-        <ProductStockTable />
+        <CustomersTable />
       </Container>
     </>
   );
 };
 
-export default StockPage;
+export default Customers;
 
-const ProductStockTable = () => {
+const CustomersTable = () => {
+  const role = useRole((state) => state.role);
+  const isRoleLoading = useRole((state) => state.isLoading);
   const axios = useAxiosAuth();
   const router = useRouter();
   const [count, setCount] = useState(0);
@@ -66,45 +68,47 @@ const ProductStockTable = () => {
 
   const { data, isLoading, isError, isFetching } = useQuery({
     queryKey: [
-      "stocks",
-      router.query.storeId,
+      "balancecs",
+      router.query.depotId,
       columnFilters,
       pagination.pageIndex,
       pagination.pageSize,
       sorting,
     ],
     queryFn: async () => {
+      if (!role) {
+        throw new Error();
+      }
       const params = new URLSearchParams({
-        store: router.query.storeId as string,
+        depot: router.query.depotId as string,
         per_page: `${pagination.pageSize}`,
         page: `${pagination.pageIndex + 1}`,
+        expand: "customer,officer",
       });
       if (sorting.length) {
         params.set(
           "ordering",
-          sorting
-            .map((item) => {
-              const id =
-                item.id === "product.id"
-                  ? "product"
-                  : item.id.replace(".", "__");
-              return `${item.desc ? "-" : ""}${id}`;
-            })
-            .join()
+          sorting.map((item) => `${item.desc ? "-" : ""}${item.id}`).join()
         );
+      }
+      if (role.role === "OFFICER") {
+        params.set("officer", `${role.id}`);
       }
 
       columnFilters.forEach((item) => {
-        params.set(item.id, `${item.value as string}`);
+        params.append(item.id, `${item.value as string}`);
       });
 
       const { data } = await axios
-        .get<ListResponse<ProductStock>>(`api/stocks/?${params.toString()}`)
+        .get<ListResponse<CustomerBalance>>(
+          `api/balances/?${params.toString()}`
+        )
         .catch((error) => {
           throw error;
         });
       return data;
     },
+    enabled: !!role,
     onSuccess: (data) => setCount(data.count),
   });
   return (
@@ -117,7 +121,7 @@ const ProductStockTable = () => {
           width: "100%",
         }}
       >
-        <MaterialReactTable<ProductStock>
+        <MaterialReactTable<CustomerBalance>
           columns={columns}
           data={data ? data.results : []}
           enableGlobalFilter={false}
@@ -130,47 +134,72 @@ const ProductStockTable = () => {
           rowCount={count}
           state={{
             columnFilters,
-            isLoading,
+            isLoading: isLoading || isRoleLoading,
             pagination,
             showAlertBanner: isError,
             showProgressBars: isFetching,
             sorting,
           }}
+          muiTableBodyRowProps={({ row }) => ({
+            sx: { cursor: "pointer" },
+            onClick: () =>
+              void router.push({
+                pathname: "/depots/[depotId]/customers/[balanceId]",
+                query: {
+                  ...router.query,
+                  balanceId: row.getValue<string>("id"),
+                },
+              }),
+          })}
           muiToolbarAlertBannerProps={
             isError
-              ? {
-                  color: "error",
-                  children: "Error loading data",
-                }
+              ? { color: "error", children: "Error loading data" }
               : undefined
           }
           defaultColumn={{
             enableGlobalFilter: false,
           }}
-          initialState={{ density: "compact" }}
+          initialState={{ density: "compact", columnVisibility: { id: false } }}
         />
       </Box>
     </Box>
   );
 };
 
-const columns: MRT_ColumnDef<ProductStock>[] = [
-  { accessorKey: "product.id", header: "ID", enableSorting: false },
-  { accessorKey: "product.name", header: "Name" },
-  { accessorKey: "product.pack_size", header: "Pack Size" },
+const columns: MRT_ColumnDef<CustomerBalance>[] = [
   {
-    accessorKey: "product.price",
-    header: "Price",
+    accessorKey: "customer.id",
+    header: "Customer ID",
+    enableSorting: false,
+  },
+  {
+    accessorKey: "id",
+    header: "Balance ID",
+  },
+  {
+    accessorKey: "customer.name",
+    header: "Name",
+    enableSorting: false,
+  },
+  {
+    accessorKey: "customer.phone",
+    header: "Phone",
+    enableSorting: false,
+  },
+  {
+    accessorKey: "sales",
+    header: "Sales",
     enableColumnFilter: false,
     Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
     muiTableHeadCellProps: { align: "right" },
     muiTableBodyCellProps: { align: "right" },
   },
   {
-    accessorKey: "quantity",
-    header: "Quantity",
+    accessorKey: "cash_in",
+    header: "Cash In",
     enableColumnFilter: false,
-    muiTableHeadCellProps: { align: "center" },
-    muiTableBodyCellProps: { align: "center" },
+    Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
+    muiTableHeadCellProps: { align: "right" },
+    muiTableBodyCellProps: { align: "right" },
   },
 ];

@@ -1,56 +1,54 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { useState } from "react";
 import Head from "next/head";
-import Container from "@mui/material/Container";
-import Box from "@mui/material/Box";
-import PageToolbar from "@/components/PageToolbar";
-import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
 import { useRouter } from "next/router";
 import { useQuery } from "@tanstack/react-query";
-import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import MaterialReactTable from "material-react-table";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
+import { useDepot } from "@/lib/store/depot";
+import PageToolbar from "@/components/PageToolbar";
+import type { ListResponse, ProductStock } from "@/lib/types";
 import type {
   MRT_ColumnDef,
   MRT_ColumnFiltersState,
   MRT_PaginationState,
   MRT_SortingState,
 } from "material-react-table";
-import type { CustomerBalance, ListResponse } from "@/lib/types";
 import { toBdt } from "@/lib/formatter";
 
-const Customers = () => {
+const StockPage = () => {
+  const depot = useDepot((state) => state.depot);
   const router = useRouter();
-  const store = useCurrentStore((state) => state.store);
 
   return (
     <>
       <Head>
-        <title>Customers | TopTen</title>
+        <title>{`Stock - ${depot?.name ?? "Depot"} | Top Ten`}</title>
       </Head>
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          heading="Customers"
-          backHref={`/stores/${router.query.storeId as string}`}
+          heading="Stock"
+          backHref={depot?.id ? `/depots/${depot.id}` : undefined}
           breadcrumbItems={[
-            { name: "Stores", path: `/stores` },
+            { name: "Depots", path: `/depots` },
             {
-              name: store?.name ?? "store",
-              path: `/stores/${router.query.storeId as string}`,
+              name: depot?.name ?? "depot",
+              path: `/depots/${router.query.depotId as string}`,
             },
-            { name: "Customers" },
+            { name: "Stock" },
           ]}
         />
-        <CustomersTable />
+
+        <ProductStockTable />
       </Container>
     </>
   );
 };
 
-export default Customers;
+export default StockPage;
 
-const CustomersTable = () => {
-  const role = useStoreRole((state) => state.role);
-  const isRoleLoading = useStoreRole((state) => state.isLoading);
+const ProductStockTable = () => {
   const axios = useAxiosAuth();
   const router = useRouter();
   const [count, setCount] = useState(0);
@@ -68,47 +66,45 @@ const CustomersTable = () => {
 
   const { data, isLoading, isError, isFetching } = useQuery({
     queryKey: [
-      "balancecs",
-      router.query.storeId,
+      "stocks",
+      router.query.depotId,
       columnFilters,
       pagination.pageIndex,
       pagination.pageSize,
       sorting,
     ],
     queryFn: async () => {
-      if (!role) {
-        throw new Error();
-      }
       const params = new URLSearchParams({
-        store: router.query.storeId as string,
+        depot: router.query.depotId as string,
         per_page: `${pagination.pageSize}`,
         page: `${pagination.pageIndex + 1}`,
-        expand: "customer,officer",
       });
       if (sorting.length) {
         params.set(
           "ordering",
-          sorting.map((item) => `${item.desc ? "-" : ""}${item.id}`).join()
+          sorting
+            .map((item) => {
+              const id =
+                item.id === "product.id"
+                  ? "product"
+                  : item.id.replace(".", "__");
+              return `${item.desc ? "-" : ""}${id}`;
+            })
+            .join()
         );
-      }
-      if (role.role === "OFFICER") {
-        params.set("officer", `${role.id}`);
       }
 
       columnFilters.forEach((item) => {
-        params.append(item.id, `${item.value as string}`);
+        params.set(item.id, `${item.value as string}`);
       });
 
       const { data } = await axios
-        .get<ListResponse<CustomerBalance>>(
-          `api/balances/?${params.toString()}`
-        )
+        .get<ListResponse<ProductStock>>(`api/stocks/?${params.toString()}`)
         .catch((error) => {
           throw error;
         });
       return data;
     },
-    enabled: !!role,
     onSuccess: (data) => setCount(data.count),
   });
   return (
@@ -121,7 +117,7 @@ const CustomersTable = () => {
           width: "100%",
         }}
       >
-        <MaterialReactTable<CustomerBalance>
+        <MaterialReactTable<ProductStock>
           columns={columns}
           data={data ? data.results : []}
           enableGlobalFilter={false}
@@ -134,72 +130,47 @@ const CustomersTable = () => {
           rowCount={count}
           state={{
             columnFilters,
-            isLoading: isLoading || isRoleLoading,
+            isLoading,
             pagination,
             showAlertBanner: isError,
             showProgressBars: isFetching,
             sorting,
           }}
-          muiTableBodyRowProps={({ row }) => ({
-            sx: { cursor: "pointer" },
-            onClick: () =>
-              void router.push({
-                pathname: "/stores/[storeId]/customers/[balanceId]",
-                query: {
-                  ...router.query,
-                  balanceId: row.getValue<string>("id"),
-                },
-              }),
-          })}
           muiToolbarAlertBannerProps={
             isError
-              ? { color: "error", children: "Error loading data" }
+              ? {
+                  color: "error",
+                  children: "Error loading data",
+                }
               : undefined
           }
           defaultColumn={{
             enableGlobalFilter: false,
           }}
-          initialState={{ density: "compact", columnVisibility: { id: false } }}
+          initialState={{ density: "compact" }}
         />
       </Box>
     </Box>
   );
 };
 
-const columns: MRT_ColumnDef<CustomerBalance>[] = [
+const columns: MRT_ColumnDef<ProductStock>[] = [
+  { accessorKey: "product.id", header: "ID", enableSorting: false },
+  { accessorKey: "product.name", header: "Name" },
+  { accessorKey: "product.pack_size", header: "Pack Size" },
   {
-    accessorKey: "customer.id",
-    header: "Customer ID",
-    enableSorting: false,
-  },
-  {
-    accessorKey: "id",
-    header: "Balance ID",
-  },
-  {
-    accessorKey: "customer.name",
-    header: "Name",
-    enableSorting: false,
-  },
-  {
-    accessorKey: "customer.phone",
-    header: "Phone",
-    enableSorting: false,
-  },
-  {
-    accessorKey: "sales",
-    header: "Sales",
+    accessorKey: "product.price",
+    header: "Price",
     enableColumnFilter: false,
     Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
     muiTableHeadCellProps: { align: "right" },
     muiTableBodyCellProps: { align: "right" },
   },
   {
-    accessorKey: "cash_in",
-    header: "Cash In",
+    accessorKey: "quantity",
+    header: "Quantity",
     enableColumnFilter: false,
-    Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
-    muiTableHeadCellProps: { align: "right" },
-    muiTableBodyCellProps: { align: "right" },
+    muiTableHeadCellProps: { align: "center" },
+    muiTableBodyCellProps: { align: "center" },
   },
 ];

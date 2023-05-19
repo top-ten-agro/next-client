@@ -1,28 +1,28 @@
 import { create } from "zustand";
-import type { Role, Store } from "../types";
+import type { Role, Depot } from "../types";
 
-interface CurrentStore {
+interface CurrentDepot {
   isLoading: boolean;
-  store: Store | null;
-  setStore: (store: Store | null) => void;
+  depot: Depot | null;
+  setDepot: (depot: Depot | null) => void;
   setIsLoading: (isLoading: boolean) => void;
 }
 
-export const useCurrentStore = create<CurrentStore>()((set) => ({
+export const useDepot = create<CurrentDepot>()((set) => ({
   isLoading: false,
-  store: null,
+  depot: null,
   setIsLoading: (isLoading) => set({ isLoading }),
-  setStore: (store) => set({ store }),
+  setDepot: (depot) => set({ depot }),
 }));
 
-interface RoleStore {
+interface RoleDepot {
   isLoading: boolean;
   role: Role | null;
   setRole: (role: Role | null) => void;
   setIsLoading: (isLoading: boolean) => void;
 }
 
-export const useStoreRole = create<RoleStore>()((set) => ({
+export const useRole = create<RoleDepot>()((set) => ({
   isLoading: false,
   role: null,
   setIsLoading: (isLoading) => set({ isLoading }),

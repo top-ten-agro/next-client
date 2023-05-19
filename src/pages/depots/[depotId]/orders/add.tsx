@@ -16,7 +16,7 @@ import Divider from "@mui/material/Divider";
 import PageToolbar from "@/components/PageToolbar";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import Typography from "@mui/material/Typography";
-import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
+import { useDepot, useRole } from "@/lib/store/depot";
 import type { ListResponse, Product, Order, Customer } from "@/lib/types";
 import { orderItemsReducer } from "@/lib/reducers/orderItems";
 import OrderItemForm from "@/components/OrderItemForm";
@@ -25,9 +25,9 @@ import OrderItemsTable from "@/components/OrderItemsTable";
 const AddOrder = () => {
   const router = useRouter();
   const axios = useAxiosAuth();
-  const store = useCurrentStore((state) => state.store);
-  const role = useStoreRole((state) => state.role);
-  const isRoleLoading = useStoreRole((state) => state.isLoading);
+  const depot = useDepot((state) => state.depot);
+  const role = useRole((state) => state.role);
+  const isRoleLoading = useRole((state) => state.isLoading);
   const [items, dispatch] = useReducer(orderItemsReducer, []);
   const [selectedCustomer, setselectedCustomer] = useState<number>();
   const [commission, setCommission] = useState(0);
@@ -35,21 +35,21 @@ const AddOrder = () => {
   type PartialBalance = { customer: Pick<Customer, "id" | "name"> };
 
   const { data: products } = useQuery({
-    queryKey: ["products", router.query.storeId],
+    queryKey: ["products", router.query.depotId],
     queryFn: async () => {
       const { data } = await axios.get<ListResponse<Product>>(
-        `api/products/?stores=${router.query.storeId as string}&per_page=999`
+        `api/products/?depots=${router.query.depotId as string}&per_page=999`
       );
       return data.results;
     },
     initialData: [] as Product[],
   });
   const { data: customers } = useQuery(
-    ["entry-balances", router.query.storeId],
+    ["entry-balances", router.query.depotId],
     async () => {
-      const storeId = router.query.storeId as string;
+      const depotId = router.query.depotId as string;
       const { data } = await axios.get<PartialBalance[]>(
-        `api/stores/${storeId}/customers/?expand=customer&fields=customer.id,customer.name`
+        `api/depots/${depotId}/customers/?expand=customer&fields=customer.id,customer.name`
       );
       return data.map((item) => item.customer);
     },
@@ -57,7 +57,7 @@ const AddOrder = () => {
   );
 
   const { mutate: createOrder, isLoading: isCreatingStock } = useMutation({
-    mutationKey: ["order", "create-order", store?.id],
+    mutationKey: ["order", "create-order", depot?.id],
     mutationFn: async () => {
       if (!items.length) {
         throw new Error("No product selected.");
@@ -67,7 +67,7 @@ const AddOrder = () => {
       }
       const res = await axios.post(`api/orders/`, {
         items,
-        store: parseInt(router.query.storeId as string),
+        depot: parseInt(router.query.depotId as string),
         customer: selectedCustomer,
         commission,
       });
@@ -76,7 +76,7 @@ const AddOrder = () => {
     onSuccess: (data) => {
       if (!data) return;
       void router.push({
-        pathname: "/stores/[storeId]/orders/[orderId]",
+        pathname: "/depots/[depotId]/orders/[orderId]",
         query: {
           ...router.query,
           orderId: data.id,
@@ -96,17 +96,17 @@ const AddOrder = () => {
 
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          backHref={`/stores/${router.query.storeId as string}/orders`}
+          backHref={`/depots/${router.query.depotId as string}/orders`}
           heading={`Add Order`}
           breadcrumbItems={[
-            { name: "Stores", path: `/stores` },
+            { name: "Depots", path: `/depots` },
             {
-              name: store?.name ?? "store",
-              path: `/stores/${store?.id ?? ""}`,
+              name: depot?.name ?? "depot",
+              path: `/depots/${depot?.id ?? ""}`,
             },
             {
               name: "Orders",
-              path: `/stores/${router.query.storeId as string}/orders`,
+              path: `/depots/${router.query.depotId as string}/orders`,
             },
             { name: `Add Order` },
           ]}

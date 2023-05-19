@@ -13,7 +13,7 @@ import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import PageToolbar from "@/components/PageToolbar";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
+import { useDepot, useRole } from "@/lib/store/depot";
 import type { ListResponse, Product, ReStock } from "@/lib/types";
 import dayjs from "dayjs";
 import Typography from "@mui/material/Typography";
@@ -25,8 +25,8 @@ import { restockItemsReducer } from "@/lib/reducers/restockItems";
 const RestockPage = () => {
   const router = useRouter();
   const axios = useAxiosAuth();
-  const store = useCurrentStore((state) => state.store);
-  const role = useStoreRole((state) => state.role);
+  const depot = useDepot((state) => state.depot);
+  const role = useRole((state) => state.role);
   const [items, dispatch] = useReducer(restockItemsReducer, []);
 
   const { data: products } = useQuery({
@@ -68,7 +68,7 @@ const RestockPage = () => {
     },
   });
   const { mutate: updateRestock, isLoading: isUpdatingStock } = useMutation({
-    mutationKey: ["restock", "update-restock", store?.id],
+    mutationKey: ["restock", "update-restock", depot?.id],
     mutationFn: async () => {
       if (!restock) return;
       if (restock.approved) {
@@ -79,7 +79,7 @@ const RestockPage = () => {
       }
       const res = await axios.put(`api/restocks/${restock.id}/`, {
         items,
-        store: restock.store,
+        depot: restock.depot,
       });
       return res.data as ReStock;
     },
@@ -106,7 +106,7 @@ const RestockPage = () => {
     },
     onSuccess: () => {
       void router.push({
-        pathname: "/stores/[storeId]/restocks",
+        pathname: "/depots/[depotId]/restocks",
         query: { ...router.query },
       });
     },
@@ -161,17 +161,17 @@ const RestockPage = () => {
 
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          backHref={`/stores/${router.query.storeId as string}/restocks`}
+          backHref={`/depots/${router.query.depotId as string}/restocks`}
           heading={`ReStock #${restock?.id ?? ""}`}
           breadcrumbItems={[
-            { name: "Stores", path: `/stores` },
+            { name: "Depots", path: `/depots` },
             {
-              name: store?.name ?? "store",
-              path: `/stores/${store?.id ?? ""}`,
+              name: depot?.name ?? "depot",
+              path: `/depots/${depot?.id ?? ""}`,
             },
             {
               name: "Re-Stocks",
-              path: `/stores/${router.query.storeId as string}/restocks`,
+              path: `/depots/${router.query.depotId as string}/restocks`,
             },
             { name: `ReStock #${restock?.id ?? ""}` },
           ]}
