@@ -212,10 +212,10 @@ const CustomerPage = () => {
                 </TabList>
               </Box>
               <TabPanel value="1" sx={{ padding: 0 }}>
-                <OrdersTable customerId={balance.customer.id} />
+                <OrdersTable />
               </TabPanel>
               <TabPanel value="2" sx={{ padding: 0 }}>
-                <TransactionsTable customerId={balance.customer.id} />
+                <TransactionsTable />
               </TabPanel>
             </TabContext>
           </Box>
@@ -256,7 +256,7 @@ const BalanceTable = ({ balance }: { balance: CustomerBalance }) => (
   </TableContainer>
 );
 
-const OrdersTable = ({ customerId }: { customerId: number }) => {
+const OrdersTable = () => {
   const axios = useAxiosAuth();
   const router = useRouter();
   const [count, setCount] = useState(0);
@@ -274,19 +274,19 @@ const OrdersTable = ({ customerId }: { customerId: number }) => {
 
   const { data, isLoading, isError, isFetching } = useQuery({
     queryKey: [
-      "orders",
-      customerId,
-      router.query.depotId,
+      "customer-orders",
+      router.query.balanceId,
       columnFilters,
       pagination.pageIndex,
       pagination.pageSize,
       sorting,
     ],
     queryFn: async () => {
+      const id = router.query.balanceId as string;
       const params = new URLSearchParams({
         expand: "created_by",
-        depot: router.query.depotId as string,
-        customer: `${customerId}`,
+        omit: "items",
+        balance: id,
         per_page: `${pagination.pageSize}`,
         page: `${pagination.pageIndex + 1}`,
       });
@@ -422,8 +422,9 @@ const OrdersTable = ({ customerId }: { customerId: number }) => {
   );
 };
 
-const TransactionsTable = ({ customerId }: { customerId: number }) => {
+const TransactionsTable = () => {
   const axios = useAxiosAuth();
+
   const router = useRouter();
   const [count, setCount] = useState(0);
 
@@ -440,19 +441,18 @@ const TransactionsTable = ({ customerId }: { customerId: number }) => {
 
   const { data, isLoading, isError, isFetching } = useQuery({
     queryKey: [
-      "transactions",
-      customerId,
-      router.query.depotId,
+      "customer-transactions",
+      router.query.balanceId,
       columnFilters,
       pagination.pageIndex,
       pagination.pageSize,
       sorting,
     ],
     queryFn: async () => {
+      const id = router.query.balanceId as string;
       const params = new URLSearchParams({
         expand: "created_by",
-        customer: `${customerId}`,
-        depot: router.query.depotId as string,
+        balance: id,
         per_page: `${pagination.pageSize}`,
         page: `${pagination.pageIndex + 1}`,
       });
@@ -485,9 +485,7 @@ const TransactionsTable = ({ customerId }: { customerId: number }) => {
   const columns = useMemo<MRT_ColumnDef<Transaction>[]>(
     () => [
       { accessorKey: "id", header: "ID", enableSorting: false, size: 100 },
-
       { accessorKey: "title", header: "Title" },
-
       {
         accessorKey: "approved",
         header: "Approved",

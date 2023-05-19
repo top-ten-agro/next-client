@@ -29,10 +29,10 @@ const AddOrder = () => {
   const role = useRole((state) => state.role);
   const isRoleLoading = useRole((state) => state.isLoading);
   const [items, dispatch] = useReducer(orderItemsReducer, []);
-  const [selectedCustomer, setselectedCustomer] = useState<number>();
+  const [selectedBalance, setSelectedBalance] = useState<number>();
   const [commission, setCommission] = useState(0);
 
-  type PartialBalance = { customer: Pick<Customer, "id" | "name"> };
+  type PartialBalance = { id: number; customer: Pick<Customer, "id" | "name"> };
 
   const { data: products } = useQuery({
     queryKey: ["products", router.query.depotId],
@@ -49,9 +49,9 @@ const AddOrder = () => {
     async () => {
       const depotId = router.query.depotId as string;
       const { data } = await axios.get<PartialBalance[]>(
-        `api/depots/${depotId}/customers/?expand=customer&fields=customer.id,customer.name`
+        `api/depots/${depotId}/customers/?expand=customer&fields=id,customer.id,customer.name`
       );
-      return data.map((item) => item.customer);
+      return data;
     },
     { initialData: [] }
   );
@@ -62,14 +62,15 @@ const AddOrder = () => {
       if (!items.length) {
         throw new Error("No product selected.");
       }
-      if (!selectedCustomer) {
+      if (!selectedBalance) {
         throw new Error("No customer selected.");
       }
       const res = await axios.post(`api/orders/`, {
         items,
         depot: parseInt(router.query.depotId as string),
-        customer: selectedCustomer,
+        balance: selectedBalance,
         commission,
+        subtotal: 0,
       });
       return res.data as Order;
     },
@@ -120,13 +121,13 @@ const AddOrder = () => {
               <Autocomplete
                 sx={{ mb: 2 }}
                 value={
-                  customers?.find(({ id }) => id === selectedCustomer) ?? null
+                  customers?.find(({ id }) => id === selectedBalance) ?? null
                 }
                 options={customers}
                 onChange={(_, data) => {
-                  setselectedCustomer(data?.id);
+                  setSelectedBalance(data?.id);
                 }}
-                getOptionLabel={(option) => option.name}
+                getOptionLabel={(option) => option.customer.name}
                 renderInput={(params) => (
                   <TextField
                     {...params}

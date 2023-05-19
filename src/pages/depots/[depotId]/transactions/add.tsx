@@ -25,14 +25,14 @@ import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import { useDepot, useRole } from "@/lib/store/depot";
 import type { Transaction, Customer } from "@/lib/types";
 
-type PartialBalance = { customer: Pick<Customer, "id" | "name"> };
+type PartialBalance = { id: number; customer: Pick<Customer, "id" | "name"> };
 
 const schema = z.object({
   title: z.string().min(1),
   type: z.enum(["IN", "OUT"]),
   category: z.enum(["SALES", "TRANSPORT", "BILL"]),
   note: z.string().optional(),
-  customer: z.number().int().optional(),
+  balance: z.number().int().optional(),
   amount: z.number().min(1, "Amount is too small."),
 });
 
@@ -63,9 +63,9 @@ const AddTransaction = () => {
     async () => {
       const depotId = router.query.depotId as string;
       const { data } = await axios.get<PartialBalance[]>(
-        `api/depots/${depotId}/customers/?expand=customer&fields=customer.id,customer.name`
+        `api/depots/${depotId}/customers/?expand=customer&fields=id,customer.id,customer.name`
       );
-      return data.map((item) => item.customer);
+      return data;
     },
     { initialData: [] }
   );
@@ -77,7 +77,7 @@ const AddTransaction = () => {
         depot: parseInt(router.query.depotId as string),
         title: props.title,
         category: props.category,
-        customer: props.customer,
+        balance: props.balance,
         cash_in: props.type === "IN" ? props.amount : 0,
         cash_out: props.type === "OUT" ? props.amount : 0,
         note: props.note,
@@ -169,7 +169,7 @@ const AddTransaction = () => {
                   </Grid>
                   <Grid xs={12}>
                     <Controller
-                      name="customer"
+                      name="balance"
                       control={control}
                       render={({ field: { onChange, value, ...field } }) => (
                         <Autocomplete
@@ -180,14 +180,14 @@ const AddTransaction = () => {
                           }
                           options={customers}
                           onChange={(_, data) => onChange(data?.id)}
-                          getOptionLabel={(option) => option.name}
+                          getOptionLabel={(option) => option.customer.name}
                           renderInput={(params) => (
                             <TextField
                               {...params}
                               label="Customer"
                               placeholder="Select a Customer"
-                              error={!!errors.customer}
-                              helperText={errors.customer?.message}
+                              error={!!errors.balance}
+                              helperText={errors.balance?.message}
                             />
                           )}
                         />

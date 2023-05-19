@@ -70,10 +70,9 @@ const TransactionPage = () => {
   } = useQuery({
     queryKey: ["transaction", "fetch-transaction", router.query.txnId],
     queryFn: async () => {
+      const id = router.query.txnId as string;
       const { data } = await axios.get<Transaction>(
-        `api/transactions/${
-          router.query.txnId as string
-        }/?expand=created_by,customer`
+        `api/transactions/${id}/?expand=created_by,balance.customer`
       );
       return data;
     },
@@ -105,7 +104,7 @@ const TransactionPage = () => {
         `api/transactions/${router.query.txnId as string}/`,
         {
           depot: transaction.depot,
-          customer: transaction.customer?.id,
+          balance: transaction.balance?.id,
           title: props.title,
           category: props.category,
           cash_in: props.type === "IN" ? props.amount : 0,
@@ -386,17 +385,17 @@ const TransactionPage = () => {
             </Grid>
             <Grid xs={12} md={6} order={{ xs: 1, md: 2 }}>
               <List dense sx={{ mb: 2 }}>
-                {transaction.customer ? (
+                {transaction.balance ? (
                   <ListItem sx={{ p: 0 }}>
                     <ListItemButton
                       LinkComponent={NextLink}
                       href={`/depots/${
                         router.query.depotId as string
-                      }/customers/${transaction.customer.id ?? ""}`}
+                      }/customers/${transaction.balance.id ?? ""}`}
                     >
                       <ListItemText
                         primary={"Customer"}
-                        secondary={transaction.customer.name}
+                        secondary={transaction.balance.customer.name}
                       />
                     </ListItemButton>
                   </ListItem>

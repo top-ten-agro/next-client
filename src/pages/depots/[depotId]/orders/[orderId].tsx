@@ -22,12 +22,7 @@ import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import Typography from "@mui/material/Typography";
 import { orderItemsReducer } from "@/lib/reducers/orderItems";
 import { useDepot, useRole } from "@/lib/store/depot";
-import type {
-  ListResponse,
-  Product,
-  Order,
-  CustomerBalance,
-} from "@/lib/types";
+import type { ListResponse, Product, Order } from "@/lib/types";
 import OrderItemForm from "@/components/OrderItemForm";
 import OrderItemsTable from "@/components/OrderItemsTable";
 
@@ -61,7 +56,7 @@ const OrderPage = () => {
         throw new Error("Order ID not defined.");
       }
       const { data } = await axios.get<Order>(
-        `api/orders/${router.query.orderId}/?expand=created_by,customer`
+        `api/orders/${router.query.orderId}/?expand=created_by,balance.customer`
       );
 
       return data;
@@ -82,19 +77,7 @@ const OrderPage = () => {
       }
     },
   });
-  const { data: balance } = useQuery({
-    queryKey: ["balance", router.query.depotId, order?.customer.id],
-    queryFn: async () => {
-      if (typeof router.query.depotId !== "string" || !order) {
-        throw new Error("Not enough data");
-      }
-      const { data } = await axios.get<ListResponse<CustomerBalance>>(
-        `api/balances/?depot=${router.query.depotId}&customer=${order.customer.id}`
-      );
-      return data.results[0];
-    },
-    enabled: !!order,
-  });
+
   const { mutate: updateOrder, isLoading: isUpdatingStock } = useMutation({
     mutationKey: ["order", "update-order", depot?.id],
     mutationFn: async () => {
@@ -107,8 +90,7 @@ const OrderPage = () => {
       }
       const res = await axios.put(`api/orders/${order.id}/`, {
         items,
-        depot: order.depot,
-        customer: order.customer.id,
+        balance: order.balance.id,
         commission,
       });
       return res.data as Order;
@@ -229,11 +211,11 @@ const OrderPage = () => {
                     LinkComponent={NextLink}
                     href={`/depots/${
                       router.query.depotId as string
-                    }/customers/${balance?.id ?? ""}`}
+                    }/customers/${order?.balance.id ?? ""}`}
                   >
                     <ListItemText
                       primary={"Customer"}
-                      secondary={order?.customer.name}
+                      secondary={order?.balance.customer.name}
                     />
                   </ListItemButton>
                 </ListItem>

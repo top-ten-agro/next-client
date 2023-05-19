@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -20,6 +20,7 @@ import type {
   MRT_ColumnFiltersState,
   MRT_PaginationState,
   MRT_SortingState,
+  MRT_VisibilityState,
 } from "material-react-table";
 import type { Transaction, ListResponse } from "@/lib/types";
 
@@ -76,6 +77,14 @@ const TransactionsTable = () => {
   const axios = useAxiosAuth();
   const router = useRouter();
   const [count, setCount] = useState(0);
+  const role = useRole((state) => state.role);
+  const [visibility, setVisibility] = useState<MRT_VisibilityState>({
+    "created_by.email": false,
+    id: false,
+    title: false,
+    category: false,
+    "balance.customer.id": false,
+  });
 
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>(
     []
@@ -87,9 +96,15 @@ const TransactionsTable = () => {
     pageIndex: 0,
     pageSize: 10,
   });
+  useEffect(() => {
+    if (role?.role === "OFFICER") {
+      return setVisibility((prev) => ({ ...prev, "created_by.email": false }));
+    }
+    setVisibility((prev) => ({ ...prev, "created_by.email": true }));
+  }, [role?.role]);
 
-  const { data, isLoading, isError, isFetching } = useQuery({
-    queryKey: [
+  const { data, isLoading, isError, isFetching } = useQuery(
+    [
       "transactions",
       router.query.depotId,
       columnFilters,
@@ -97,20 +112,23 @@ const TransactionsTable = () => {
       pagination.pageSize,
       sorting,
     ],
-    queryFn: async () => {
+    async () => {
+      if (!role) throw new Error("Role not found.");
       const params = new URLSearchParams({
-        expand: "created_by,customer",
+        expand: "created_by,balance.customer",
         depot: router.query.depotId as string,
         per_page: `${pagination.pageSize}`,
         page: `${pagination.pageIndex + 1}`,
       });
+      if (role.role === "OFFICER") {
+        params.set("created_by", `${role.id}`);
+      }
       if (sorting.length) {
         params.set(
           "ordering",
           sorting.map((item) => `${item.desc ? "-" : ""}${item.id}`).join()
         );
       }
-
       columnFilters.forEach((item) => {
         if (typeof item.value === "boolean") {
           return void params.set(item.id, item.value ? "true" : "false");
@@ -127,8 +145,11 @@ const TransactionsTable = () => {
         });
       return data;
     },
-    onSuccess: (data) => setCount(data.count),
-  });
+    {
+      enabled: !!role,
+      onSuccess: (data) => setCount(data.count),
+    }
+  );
 
   const columns = useMemo<MRT_ColumnDef<Transaction>[]>(
     () => [
@@ -150,7 +171,7 @@ const TransactionsTable = () => {
         muiTableBodyCellProps: { sx: { p: 0 } },
       },
       {
-        accessorKey: "customer.name",
+        accessorKey: "balance.customer.name",
         header: "Customer",
         enableSorting: false,
         Cell: ({ cell }) => cell.getValue<string | undefined>() ?? "-",
@@ -224,6 +245,7 @@ const TransactionsTable = () => {
           onColumnFiltersChange={setColumnFilters}
           onPaginationChange={setPagination}
           onSortingChange={setSorting}
+          onColumnVisibilityChange={setVisibility}
           rowCount={count}
           state={{
             columnFilters,
@@ -232,38 +254,23 @@ const TransactionsTable = () => {
             showAlertBanner: isError,
             showProgressBars: isFetching,
             sorting,
+            columnVisibility: visibility,
           }}
           muiTableBodyRowProps={({ row }) => ({
             sx: { cursor: "pointer" },
             onClick: () =>
               void router.push({
                 pathname: "/depots/[depotId]/transactions/[txnId]",
-                query: {
-                  ...router.query,
-                  txnId: row.getValue<string>("id"),
-                },
+                query: { ...router.query, txnId: row.getValue<string>("id") },
               }),
           })}
           muiToolbarAlertBannerProps={
             isError
-              ? {
-                  color: "error",
-                  children: "Error loading data",
-                }
+              ? { color: "error", children: "Error loading data" }
               : undefined
           }
-          defaultColumn={{
-            enableGlobalFilter: false,
-          }}
-          initialState={{
-            density: "compact",
-            columnVisibility: {
-              id: false,
-              title: false,
-              category: false,
-              "customer.id": false,
-            },
-          }}
+          defaultColumn={{ enableGlobalFilter: false }}
+          initialState={{ density: "compact" }}
         />
       </Box>
     </Box>

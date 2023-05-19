@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import Container from "@mui/material/Container";
 import PageToolbar from "@/components/PageToolbar";
@@ -15,6 +15,7 @@ import type {
   MRT_ColumnFiltersState,
   MRT_PaginationState,
   MRT_SortingState,
+  MRT_VisibilityState,
 } from "material-react-table";
 import type { Order, ListResponse } from "@/lib/types";
 import dayjs from "dayjs";
@@ -63,6 +64,11 @@ const OrdersTable = () => {
   const router = useRouter();
   const role = useRole((state) => state.role);
   const [count, setCount] = useState(0);
+  const [visibility, setVisibility] = useState<MRT_VisibilityState>({
+    "created_by.email": false,
+    "balance.customer.id": false,
+    subtotal: false,
+  });
 
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>(
     []
@@ -74,6 +80,13 @@ const OrdersTable = () => {
     pageIndex: 0,
     pageSize: 10,
   });
+
+  useEffect(() => {
+    if (role?.role === "OFFICER") {
+      return setVisibility((prev) => ({ ...prev, "created_by.email": false }));
+    }
+    setVisibility((prev) => ({ ...prev, "created_by.email": true }));
+  }, [role?.role]);
 
   const { data, isLoading, isError, isFetching } = useQuery(
     [
@@ -90,8 +103,9 @@ const OrdersTable = () => {
         throw new Error("Role not found.");
       }
       const params = new URLSearchParams({
-        expand: "created_by,customer",
-        depot: router.query.depotId as string,
+        expand: "created_by,balance.customer",
+        omit: "items",
+        balance__depot: router.query.depotId as string,
         per_page: `${pagination.pageSize}`,
         page: `${pagination.pageIndex + 1}`,
       });
@@ -128,12 +142,12 @@ const OrdersTable = () => {
     () => [
       { accessorKey: "id", header: "ID", enableSorting: false },
       {
-        accessorKey: "customer.id",
+        accessorKey: "balance.customer.id",
         header: "Customer ID",
         enableSorting: false,
       },
       {
-        accessorKey: "customer.name",
+        accessorKey: "balance.customer.name",
         header: "Customer",
         enableSorting: false,
       },
@@ -202,6 +216,7 @@ const OrdersTable = () => {
           onColumnFiltersChange={setColumnFilters}
           onPaginationChange={setPagination}
           onSortingChange={setSorting}
+          onColumnVisibilityChange={setVisibility}
           rowCount={count}
           state={{
             columnFilters,
@@ -210,6 +225,7 @@ const OrdersTable = () => {
             showAlertBanner: isError,
             showProgressBars: isFetching,
             sorting,
+            columnVisibility: visibility,
           }}
           muiTableBodyRowProps={({ row }) => ({
             sx: { cursor: "pointer" },
@@ -233,10 +249,7 @@ const OrdersTable = () => {
           defaultColumn={{
             enableGlobalFilter: false,
           }}
-          initialState={{
-            density: "compact",
-            columnVisibility: { "customer.id": false, subtotal: false },
-          }}
+          initialState={{ density: "compact" }}
         />
       </Box>
     </Box>
