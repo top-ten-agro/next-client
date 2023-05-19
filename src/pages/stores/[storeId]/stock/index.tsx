@@ -15,6 +15,7 @@ import type {
   MRT_PaginationState,
   MRT_SortingState,
 } from "material-react-table";
+import { toBdt } from "@/lib/formatter";
 
 const StockPage = () => {
   const store = useCurrentStore((state) => state.store);
@@ -161,6 +162,7 @@ const columns: MRT_ColumnDef<ProductStock>[] = [
     accessorKey: "product.price",
     header: "Price",
     enableColumnFilter: false,
+    Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
     muiTableHeadCellProps: { align: "right" },
     muiTableBodyCellProps: { align: "right" },
   },

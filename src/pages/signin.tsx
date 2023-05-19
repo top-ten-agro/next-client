@@ -17,7 +17,6 @@ import TextField from "@mui/material/TextField";
 import LinearProgress from "@mui/material/LinearProgress";
 import AuthLayout from "@/layouts/AuthLayout";
 import type { NextPageWithLayout } from "./_app";
-import { toast } from "react-toastify";
 
 const schema = z.object({
   email: z

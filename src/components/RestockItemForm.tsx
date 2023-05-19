@@ -76,7 +76,7 @@ const RestockItemForm = ({
                 onChange={(e) => field.onChange(+e.target.value)}
                 label="Quantity"
                 type="number"
-                inputProps={{ min: 1 }}
+                inputProps={{ min: 0 }}
                 error={!!errors.quantity}
                 helperText={errors.quantity?.message}
               />

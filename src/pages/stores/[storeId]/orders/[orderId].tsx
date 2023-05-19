@@ -22,7 +22,12 @@ import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import Typography from "@mui/material/Typography";
 import { orderItemsReducer } from "@/lib/reducers/orderItems";
 import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
-import type { ListResponse, Product, Order } from "@/lib/types";
+import type {
+  ListResponse,
+  Product,
+  Order,
+  CustomerBalance,
+} from "@/lib/types";
 import OrderItemForm from "@/components/OrderItemForm";
 import OrderItemsTable from "@/components/OrderItemsTable";
 
@@ -58,6 +63,7 @@ const OrderPage = () => {
       const { data } = await axios.get<Order>(
         `api/orders/${router.query.orderId}/?expand=created_by,customer`
       );
+
       return data;
     },
     onSuccess: ({ items, commission }) => {
@@ -76,6 +82,19 @@ const OrderPage = () => {
       }
     },
   });
+  const { data: balance } = useQuery({
+    queryKey: ["balance", router.query.storeId, order?.customer.id],
+    queryFn: async () => {
+      if (typeof router.query.storeId !== "string" || !order) {
+        throw new Error("Not enough data");
+      }
+      const { data } = await axios.get<ListResponse<CustomerBalance>>(
+        `api/balances/?store=${router.query.storeId}&customer=${order.customer.id}`
+      );
+      return data.results[0];
+    },
+    enabled: !!order,
+  });
   const { mutate: updateOrder, isLoading: isUpdatingStock } = useMutation({
     mutationKey: ["order", "update-order", store?.id],
     mutationFn: async () => {
@@ -90,7 +109,6 @@ const OrderPage = () => {
         items,
         store: order.store,
         customer: order.customer.id,
-        amount: order.amount,
         commission,
       });
       return res.data as Order;
@@ -172,8 +190,8 @@ const OrderPage = () => {
           ...item,
           rate: Number(item.rate),
         }))
-      ) === JSON.stringify(items),
-    [order, items]
+      ) === JSON.stringify(items) && commission === +(order?.commission ?? 0),
+    [order, items, commission]
   );
 
   return (
@@ -211,7 +229,7 @@ const OrderPage = () => {
                     LinkComponent={NextLink}
                     href={`/stores/${
                       router.query.storeId as string
-                    }/customers/${order?.customer.id ?? ""}`}
+                    }/customers/${balance?.id ?? ""}`}
                   >
                     <ListItemText
                       primary={"Customer"}
@@ -273,7 +291,7 @@ const OrderPage = () => {
                 >
                   <Typography>Commission:</Typography>
                   <TextField
-                    aria-label="Comission"
+                    aria-label="Commission"
                     type="number"
                     size="small"
                     InputProps={{

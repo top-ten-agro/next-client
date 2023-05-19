@@ -30,9 +30,11 @@ const RestockPage = () => {
   const [items, dispatch] = useReducer(restockItemsReducer, []);
 
   const { data: products } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["all-products"],
     queryFn: async () => {
-      const { data } = await axios.get<ListResponse<Product>>("api/products/");
+      const { data } = await axios.get<ListResponse<Product>>(
+        "api/products/?per_page=999"
+      );
       return data.results;
     },
     initialData: [] as Product[],

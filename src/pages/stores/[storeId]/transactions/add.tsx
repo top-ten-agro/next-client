@@ -23,7 +23,9 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import PageToolbar from "@/components/PageToolbar";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
-import type { ListResponse, Transaction, Customer } from "@/lib/types";
+import type { Transaction, Customer } from "@/lib/types";
+
+type PartialBalance = { customer: Pick<Customer, "id" | "name"> };
 
 const schema = z.object({
   title: z.string().min(1),
@@ -56,16 +58,17 @@ const AddTransaction = () => {
     },
   });
 
-  const { data: customers, isFetching: isFetchingCustomers } = useQuery({
-    queryKey: ["customers", router.query.storeId],
-    queryFn: async () => {
-      const { data } = await axios.get<ListResponse<Customer>>(
-        `api/customers/?stores=${router.query.storeId as string}`
+  const { data: customers, isFetching: isFetchingCustomers } = useQuery(
+    ["entry-balances", router.query.storeId],
+    async () => {
+      const storeId = router.query.storeId as string;
+      const { data } = await axios.get<PartialBalance[]>(
+        `api/stores/${storeId}/customers/?expand=customer&fields=customer.id,customer.name`
       );
-      return data.results;
+      return data.map((item) => item.customer);
     },
-    initialData: [] as Customer[],
-  });
+    { initialData: [] }
+  );
 
   const { mutate: submitTrx, isLoading: isCreatingStock } = useMutation({
     mutationKey: ["transaction", "create-transaction", router.query.storeId],

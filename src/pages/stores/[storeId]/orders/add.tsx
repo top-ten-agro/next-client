@@ -32,26 +32,29 @@ const AddOrder = () => {
   const [selectedCustomer, setselectedCustomer] = useState<number>();
   const [commission, setCommission] = useState(0);
 
+  type PartialBalance = { customer: Pick<Customer, "id" | "name"> };
+
   const { data: products } = useQuery({
     queryKey: ["products", router.query.storeId],
     queryFn: async () => {
       const { data } = await axios.get<ListResponse<Product>>(
-        `api/products/?stores=${router.query.storeId as string}`
+        `api/products/?stores=${router.query.storeId as string}&per_page=999`
       );
       return data.results;
     },
     initialData: [] as Product[],
   });
-  const { data: customers } = useQuery({
-    queryKey: ["customers", router.query.storeId],
-    queryFn: async () => {
-      const { data } = await axios.get<ListResponse<Customer>>(
-        `api/customers/?stores=${router.query.storeId as string}`
+  const { data: customers } = useQuery(
+    ["entry-balances", router.query.storeId],
+    async () => {
+      const storeId = router.query.storeId as string;
+      const { data } = await axios.get<PartialBalance[]>(
+        `api/stores/${storeId}/customers/?expand=customer&fields=customer.id,customer.name`
       );
-      return data.results;
+      return data.map((item) => item.customer);
     },
-    initialData: [] as Customer[],
-  });
+    { initialData: [] }
+  );
 
   const { mutate: createOrder, isLoading: isCreatingStock } = useMutation({
     mutationKey: ["order", "create-order", store?.id],
@@ -66,7 +69,6 @@ const AddOrder = () => {
         items,
         store: parseInt(router.query.storeId as string),
         customer: selectedCustomer,
-        amount: 0,
         commission,
       });
       return res.data as Order;
@@ -135,29 +137,9 @@ const AddOrder = () => {
                     }}
                   />
                 )}
-              />{" "}
-              <Autocomplete
-                sx={{ mb: 2 }}
-                value={
-                  customers?.find(({ id }) => id === selectedCustomer) ?? null
-                }
-                options={customers}
-                onChange={(_, data) => {
-                  setselectedCustomer(data?.id);
-                }}
-                getOptionLabel={(option) => option.name}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Customer"
-                    placeholder="Select a Customer"
-                    InputLabelProps={{
-                      shrink: true,
-                    }}
-                  />
-                )}
-              />{" "}
-              <Divider sx={{ my: 2, py: 1 }} />
+              />
+
+              <Divider sx={{ my: 2 }} />
               <OrderItemForm
                 products={products}
                 items={items}

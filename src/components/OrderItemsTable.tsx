@@ -44,11 +44,11 @@ const OrderItemsTable = ({
       <Table size="small" aria-label="products table">
         <TableHead>
           <TableRow>
+            {immutable ? null : <TableCell />}
             <TableCell>#</TableCell>
             <TableCell>Name</TableCell>
             <TableCell align="center">Quantity</TableCell>
             <TableCell align="right">Rate</TableCell>
-            {immutable ? null : <TableCell align="center">Actions</TableCell>}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -57,14 +57,6 @@ const OrderItemsTable = ({
               key={row.product}
               sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
             >
-              <TableCell component="th" scope="row">
-                {i + 1}
-              </TableCell>
-              <TableCell component="th" scope="row">
-                {row.name} {row.pack_size}
-              </TableCell>
-              <TableCell align="center">{row.quantity}</TableCell>
-              <TableCell align="right">{toBdt(row.rate)}</TableCell>
               {immutable ? null : (
                 <TableCell align="center">
                   <IconButton
@@ -76,12 +68,20 @@ const OrderItemsTable = ({
                   </IconButton>
                 </TableCell>
               )}
+              <TableCell component="th" scope="row">
+                {i + 1}
+              </TableCell>
+              <TableCell component="th" scope="row">
+                {row.name} {row.pack_size}
+              </TableCell>
+              <TableCell align="center">{row.quantity}</TableCell>
+              <TableCell align="right">{toBdt(row.rate)}</TableCell>
             </TableRow>
           ))}
           {selected.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={immutable ? 3 : 4}
+                colSpan={immutable ? 4 : 5}
                 sx={{ textAlign: "center", py: 2 }}
               >
                 no product selected.
@@ -89,7 +89,7 @@ const OrderItemsTable = ({
             </TableRow>
           ) : null}
           <TableRow>
-            <TableCell colSpan={3} rowSpan={3} />
+            <TableCell colSpan={immutable ? 2 : 3} rowSpan={3} />
             <TableCell align="right">Subtotal</TableCell>
             <TableCell align="right">{toBdt(subtotal)}</TableCell>
           </TableRow>

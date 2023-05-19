@@ -43,6 +43,7 @@ export type Role = {
   created_at: string;
   updated_at: string;
 };
+export type UserRole = Prettify<Omit<Role, "user"> & { user: User }>;
 
 export type ReStock = {
   id: number;
@@ -66,7 +67,7 @@ export type Customer = {
 export type Balance = {
   id: number;
   cash_in: string;
-  revenue: string;
+  sales: string;
   customer: number;
   store: number;
   created_at: string;
@@ -74,12 +75,13 @@ export type Balance = {
 };
 
 export type CustomerBalance = Prettify<
-  Omit<Balance, "customer"> & { customer: Customer }
+  Omit<Balance, "customer"> & { customer: Customer; officer: UserRole | null }
 >;
 
 export type Order = {
   id: number;
-  amount: string;
+  subtotal: string;
+  total: string;
   commission: string;
   approved: boolean;
   store: number;

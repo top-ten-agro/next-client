@@ -4,7 +4,7 @@ import Head from "next/head";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
 import PageToolbar from "@/components/PageToolbar";
-import { useCurrentStore } from "@/lib/store/stores";
+import { useCurrentStore, useStoreRole } from "@/lib/store/stores";
 import { useRouter } from "next/router";
 import { useQuery } from "@tanstack/react-query";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
@@ -49,6 +49,8 @@ const Customers = () => {
 export default Customers;
 
 const CustomersTable = () => {
+  const role = useStoreRole((state) => state.role);
+  const isRoleLoading = useStoreRole((state) => state.isLoading);
   const axios = useAxiosAuth();
   const router = useRouter();
   const [count, setCount] = useState(0);
@@ -74,16 +76,23 @@ const CustomersTable = () => {
       sorting,
     ],
     queryFn: async () => {
+      if (!role) {
+        throw new Error();
+      }
       const params = new URLSearchParams({
         store: router.query.storeId as string,
         per_page: `${pagination.pageSize}`,
         page: `${pagination.pageIndex + 1}`,
+        expand: "customer,officer",
       });
       if (sorting.length) {
         params.set(
           "ordering",
           sorting.map((item) => `${item.desc ? "-" : ""}${item.id}`).join()
         );
+      }
+      if (role.role === "OFFICER") {
+        params.set("officer", `${role.id}`);
       }
 
       columnFilters.forEach((item) => {
@@ -99,6 +108,7 @@ const CustomersTable = () => {
         });
       return data;
     },
+    enabled: !!role,
     onSuccess: (data) => setCount(data.count),
   });
   return (
@@ -124,7 +134,7 @@ const CustomersTable = () => {
           rowCount={count}
           state={{
             columnFilters,
-            isLoading,
+            isLoading: isLoading || isRoleLoading,
             pagination,
             showAlertBanner: isError,
             showProgressBars: isFetching,
@@ -143,16 +153,13 @@ const CustomersTable = () => {
           })}
           muiToolbarAlertBannerProps={
             isError
-              ? {
-                  color: "error",
-                  children: "Error loading data",
-                }
+              ? { color: "error", children: "Error loading data" }
               : undefined
           }
           defaultColumn={{
             enableGlobalFilter: false,
           }}
-          initialState={{ density: "compact" }}
+          initialState={{ density: "compact", columnVisibility: { id: false } }}
         />
       </Box>
     </Box>
@@ -162,7 +169,7 @@ const CustomersTable = () => {
 const columns: MRT_ColumnDef<CustomerBalance>[] = [
   {
     accessorKey: "customer.id",
-    header: "ID",
+    header: "Customer ID",
     enableSorting: false,
   },
   {
@@ -180,7 +187,7 @@ const columns: MRT_ColumnDef<CustomerBalance>[] = [
     enableSorting: false,
   },
   {
-    accessorKey: "revenue",
+    accessorKey: "sales",
     header: "Sales",
     enableColumnFilter: false,
     Cell: ({ cell }) => toBdt(+cell.getValue<string>()),

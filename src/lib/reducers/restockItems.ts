@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const schema = z.object({
   product: z.number().int(),
-  quantity: z.number().int().min(1),
+  quantity: z.number().int().min(0),
 });
 
 export type RestockItem = z.infer<typeof schema>;
@@ -28,7 +28,7 @@ export function restockItemsReducer(
 ) {
   switch (action.type) {
     case "ADD":
-      if (action.payload.quantity < 1) return items;
+      if (action.payload.quantity < 0) return items;
       return [...items, action.payload];
     case "REMOVE":
       return items.filter((item) => item.product !== action.payload);

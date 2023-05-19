@@ -8,6 +8,7 @@ import TextField from "@mui/material/TextField";
 import { schema } from "@/lib/reducers/orderItems";
 import type { Product } from "@/lib/types";
 import type { OrderItem } from "@/lib/reducers/orderItems";
+import { useEffect } from "react";
 
 const OrderItemForm = ({
   products,
@@ -23,20 +24,35 @@ const OrderItemForm = ({
     formState: { errors },
     reset,
     setValue,
+    watch,
     handleSubmit,
   } = useForm<OrderItem>({
     resolver: zodResolver(schema),
-    defaultValues: { quantity: 1 },
+    defaultValues: { quantity: 1, rate: 0 },
   });
+  const productId = watch("product");
+
+  useEffect(() => {
+    const product = products.find((item) => item.id === productId);
+    if (!product) {
+      reset();
+      return;
+    }
+    setValue("quantity", 1);
+    setValue("rate", +product.price);
+  }, [productId, products, setValue, reset]);
+
   const selectProduct = handleSubmit((data) => {
-    reset();
     addItem(data);
+    reset();
   });
   return (
     <Box component="form" onSubmit={(e) => void selectProduct(e)}>
       <Grid container spacing={2}>
         <Grid xs={12}>
           <Controller
+            name="product"
+            control={control}
             render={({ field: { onChange, value, ...field } }) => (
               <Autocomplete
                 {...field}
@@ -45,12 +61,10 @@ const OrderItemForm = ({
                   (product) =>
                     !items.find((item) => item.product === product.id)
                 )}
-                onChange={(_, data) => {
-                  setValue("rate", data ? Number(data.price) : 0);
-                  onChange(data?.id);
-                }}
-                groupBy={(option) => option.name}
-                getOptionLabel={(option) => option.pack_size}
+                onChange={(_, data) => onChange(data?.id)}
+                getOptionLabel={(option) =>
+                  `${option.name} ${option.pack_size}`
+                }
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -63,8 +77,6 @@ const OrderItemForm = ({
                 )}
               />
             )}
-            name="product"
-            control={control}
           />
         </Grid>
         <Grid xs={6}>
@@ -74,9 +86,9 @@ const OrderItemForm = ({
             render={({ field }) => (
               <TextField
                 {...field}
-                onChange={(e) => field.onChange(+e.target.value)}
                 label="Quantity"
                 type="number"
+                onChange={(e) => field.onChange(+e.target.value)}
                 inputProps={{ min: 1 }}
                 error={!!errors.quantity}
                 helperText={errors.quantity?.message}
@@ -91,12 +103,13 @@ const OrderItemForm = ({
             render={({ field }) => (
               <TextField
                 {...field}
-                onChange={(e) => field.onChange(+e.target.value)}
                 label="Rate"
                 type="number"
-                inputProps={{ min: 0 }}
+                onChange={(e) => field.onChange(+e.target.value)}
+                inputProps={{ min: 0, step: 0.1 }}
                 error={!!errors.rate}
                 helperText={errors.rate?.message}
+                InputLabelProps={{ shrink: true }}
               />
             )}
           />

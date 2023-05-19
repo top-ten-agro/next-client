@@ -61,6 +61,7 @@ export default Orders;
 const OrdersTable = () => {
   const axios = useAxiosAuth();
   const router = useRouter();
+  const role = useStoreRole((state) => state.role);
   const [count, setCount] = useState(0);
 
   const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>(
@@ -74,29 +75,35 @@ const OrdersTable = () => {
     pageSize: 10,
   });
 
-  const { data, isLoading, isError, isFetching } = useQuery({
-    queryKey: [
+  const { data, isLoading, isError, isFetching } = useQuery(
+    [
       "orders",
       router.query.storeId,
       columnFilters,
       pagination.pageIndex,
       pagination.pageSize,
       sorting,
+      role?.role,
     ],
-    queryFn: async () => {
+    async () => {
+      if (!role) {
+        throw new Error("Role not found.");
+      }
       const params = new URLSearchParams({
         expand: "created_by,customer",
         store: router.query.storeId as string,
         per_page: `${pagination.pageSize}`,
         page: `${pagination.pageIndex + 1}`,
       });
+      if (role.role === "OFFICER") {
+        params.set("created_by", `${role.user}`);
+      }
       if (sorting.length) {
         params.set(
           "ordering",
           sorting.map((item) => `${item.desc ? "-" : ""}${item.id}`).join()
         );
       }
-
       columnFilters.forEach((item) => {
         if (typeof item.value === "boolean") {
           return void params.append(item.id, item.value ? "true" : "false");
@@ -111,8 +118,11 @@ const OrdersTable = () => {
         });
       return data;
     },
-    onSuccess: (data) => setCount(data.count),
-  });
+    {
+      onSuccess: (data) => setCount(data.count),
+      enabled: !!role,
+    }
+  );
 
   const columns = useMemo<MRT_ColumnDef<Order>[]>(
     () => [
@@ -145,14 +155,23 @@ const OrdersTable = () => {
         enableColumnFilter: false,
       },
       {
-        accessorKey: "amount",
-        header: "Amount",
+        accessorKey: "subtotal",
+        header: "Subtotal",
         enableColumnFilter: false,
         Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
         muiTableHeadCellProps: { align: "right" },
         muiTableBodyCellProps: { align: "right" },
       },
-
+      {
+        header: "Total",
+        accessorKey: "total",
+        enableColumnFilter: false,
+        Cell: ({ cell }) => {
+          return toBdt(+cell.getValue<string>());
+        },
+        muiTableHeadCellProps: { align: "right" },
+        muiTableBodyCellProps: { align: "right" },
+      },
       {
         accessorKey: "created_at",
         header: "Created At",
@@ -216,7 +235,7 @@ const OrdersTable = () => {
           }}
           initialState={{
             density: "compact",
-            columnVisibility: { "customer.id": false },
+            columnVisibility: { "customer.id": false, subtotal: false },
           }}
         />
       </Box>
