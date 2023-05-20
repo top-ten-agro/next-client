@@ -106,6 +106,19 @@ export type Transaction = Prettify<{
   updated_at: string;
 }>;
 
+export type HomepageData = {
+  products: number;
+  customers: number;
+  depots: number;
+  stock: number;
+  orders: Array<{ created_at__date: string; sales: number }>;
+  transactions: Array<{
+    created_at__date: string;
+    total_cash_in: number;
+    total_cash_out: number;
+  }>;
+};
+
 type Prettify<T> = {
   [K in keyof T]: T[K];
   // eslint-disable-next-line @typescript-eslint/ban-types

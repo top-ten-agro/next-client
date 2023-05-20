@@ -121,7 +121,7 @@ const TransactionsTable = () => {
         page: `${pagination.pageIndex + 1}`,
       });
       if (role.role === "OFFICER") {
-        params.set("created_by", `${role.id}`);
+        params.set("created_by", `${role.user}`);
       }
       if (sorting.length) {
         params.set(
