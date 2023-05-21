@@ -143,10 +143,10 @@ const TransactionsStatement = () => {
                 onClick: () => {
                   console.log(row.getValue<number>("balance.depot.id"));
                   void router.push({
-                    pathname: "/depots/[depotId]/transactions/[trxId]",
+                    pathname: "/depots/[depotId]/transactions/[txnId]",
                     query: {
                       depotId: row.original.depot.id,
-                      trxId: row.getValue<number>("id"),
+                      txnId: row.getValue<number>("id"),
                     },
                   });
                 },
