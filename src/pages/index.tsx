@@ -103,7 +103,7 @@ const Home = () => {
               size="small"
               exclusive
               value={days}
-              onChange={(e, val) => setDays(val as number)}
+              onChange={(e, val) => (val ? setDays(val as number) : null)}
             >
               <ToggleButton value={7}>7 days</ToggleButton>
               <ToggleButton value={15}>15 days</ToggleButton>
@@ -118,7 +118,7 @@ const Home = () => {
                   insetInline: 0,
                 }}
               >
-                <InfoChart data={dataPoints.reverse()} />
+                <InfoChart data={dataPoints.slice().reverse()} />
               </Box>
             </Box>
           </Box>
