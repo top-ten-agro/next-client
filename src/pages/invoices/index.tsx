@@ -34,7 +34,6 @@ const OrdersStatement = () => {
     const { data } = await axios.get<DepotOrder[]>(
       `api/orders/statement/?omit=items&expand=balance.customer,balance.depot,created_by&from=${startDate}&to=${endDate}`
     );
-
     return data;
   });
 

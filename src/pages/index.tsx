@@ -51,7 +51,7 @@ const Home = () => {
       );
       return {
         date: dayjs(date).format("DD/MM/YY"),
-        cash_in: trx?.total_cash_in ?? 0,
+        recovery: trx?.total_cash_in ?? 0,
         cash_out: trx?.total_cash_out ?? 0,
         sales: order?.sales ?? 0,
       };
@@ -179,8 +179,7 @@ const InfoChart = ({
 }: {
   data: Array<{
     date: string;
-    cash_in: number;
-    cash_out: number;
+    recovery: number;
     sales: number;
   }>;
 }) => (
@@ -197,18 +196,12 @@ const InfoChart = ({
     <Legend />
     <Line
       type="monotone"
-      dataKey="cash_in"
-      label="Cash in"
+      dataKey="recovery"
+      label="Recovery"
       stroke="#8884d8"
       animationDuration={200}
     />
-    <Line
-      type="monotone"
-      dataKey="cash_out"
-      label="Cash out"
-      stroke="#6884d8"
-      animationDuration={200}
-    />
+
     <Line
       type="monotone"
       dataKey="sales"

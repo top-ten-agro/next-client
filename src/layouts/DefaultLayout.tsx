@@ -46,7 +46,7 @@ const routes = [
   { path: "/depots", name: "Depots", icon: <StoreIcon /> },
   { path: "/products", name: "Products", icon: <CategoryIcon /> },
   { path: "/customers", name: "Customers", icon: <PeopleIcon /> },
-  { path: "/orders", name: "Orders", icon: <ReceiptIcon /> },
+  { path: "/invoices", name: "Invoices", icon: <ReceiptIcon /> },
   { path: "/transactions", name: "Transactions", icon: <MoneyIcon /> },
 ];
 
