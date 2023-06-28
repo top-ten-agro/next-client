@@ -35,10 +35,10 @@ const OrderPage = () => {
   const [commission, setCommission] = useState(0);
 
   const { data: products } = useQuery({
-    queryKey: ["products", router.query.depotId],
+    queryKey: ["all-products", router.query.depotId],
     queryFn: async () => {
       const { data } = await axios.get<ListResponse<Product>>(
-        `api/products/?depots=${router.query.depotId as string}`
+        `api/products/?depot=${router.query.depotId as string}&per_page=999`
       );
       return data.results;
     },
@@ -116,6 +116,7 @@ const OrderPage = () => {
       }
       await axios.delete(`api/orders/${order.id}/remove/`);
     },
+
     onSuccess: () => {
       void router.push({
         pathname: "/depots/[depotId]/orders",

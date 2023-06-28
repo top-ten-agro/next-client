@@ -35,24 +35,19 @@ const TransactionsStatement = () => {
     return data;
   });
 
-  const sum = useMemo(
-    () =>
-      transactions?.reduce(
-        ({ cash_in, cash_out }, crr) => ({
-          cash_in: cash_in + Number(crr.cash_in),
-          cash_out: cash_out + Number(crr.cash_out),
-        }),
-        { cash_in: 0, cash_out: 0 }
-      ) ?? { cash_in: 0, cash_out: 0 },
-    [transactions]
-  );
-
   const columns = useMemo<MRT_ColumnDef<DepotTransaction>[]>(
     () => [
-      { accessorKey: "id", header: "#", size: 100 },
+      {
+        accessorKey: "created_at",
+        header: "Date",
+        enableColumnFilter: false,
+        enableGlobalFilter: false,
+        Cell: ({ cell }) => dayjs(cell.getValue<string>()).format("DD/MM/YYYY"),
+      },
+      { accessorKey: "id", header: "ID", size: 100 },
       { accessorKey: "title", header: "Title" },
       { accessorKey: "depot.name", header: "Depot" },
-      { accessorKey: "created_by.email", header: "Officer" },
+      { accessorKey: "created_by.get_full_name", header: "Officer" },
       {
         accessorKey: "balance.customer.name",
         header: "Customer",
@@ -64,11 +59,19 @@ const TransactionsStatement = () => {
         muiTableHeadCellProps: { align: "right" },
         muiTableBodyCellProps: { align: "right" },
         Cell: ({ cell }) => toBdt(+cell.getValue<string>(), { decimal: 0 }),
-        Footer: () => (
-          <Typography fontWeight="bold" textAlign="right">
-            {toBdt(sum.cash_in, { decimal: 0 })}
-          </Typography>
-        ),
+        Footer: ({ table }) => {
+          const total = table
+            .getFilteredRowModel()
+            .rows.reduce(
+              (acc, row) => acc + parseFloat(row.getValue<string>("cash_in")),
+              0
+            );
+          return (
+            <Typography fontWeight="bold" textAlign="right">
+              {toBdt(total ?? 0, { decimal: 0 })}
+            </Typography>
+          );
+        },
       },
       {
         accessorKey: "cash_out",
@@ -77,21 +80,22 @@ const TransactionsStatement = () => {
         muiTableHeadCellProps: { align: "right" },
         muiTableBodyCellProps: { align: "right" },
         Cell: ({ cell }) => toBdt(+cell.getValue<string>(), { decimal: 0 }),
-        Footer: () => (
-          <Typography fontWeight="bold" textAlign="right">
-            {toBdt(sum.cash_out, { decimal: 0 })}
-          </Typography>
-        ),
-      },
-      {
-        accessorKey: "created_at",
-        header: "Created At",
-        enableColumnFilter: false,
-        enableGlobalFilter: false,
-        Cell: ({ cell }) => dayjs(cell.getValue<string>()).format("DD/MM/YYYY"),
+        Footer: ({ table }) => {
+          const total = table
+            .getFilteredRowModel()
+            .rows.reduce(
+              (acc, row) => acc + parseFloat(row.getValue<string>("cash_out")),
+              0
+            );
+          return (
+            <Typography fontWeight="bold" textAlign="right">
+              {toBdt(total ?? 0, { decimal: 0 })}
+            </Typography>
+          );
+        },
       },
     ],
-    [sum.cash_in, sum.cash_out]
+    []
   );
 
   return (
@@ -135,13 +139,16 @@ const TransactionsStatement = () => {
               state={{ isLoading }}
               initialState={{
                 density: "compact",
-                columnVisibility: { title: false },
+                columnVisibility: {
+                  title: false,
+                  cash_out:
+                    transactions?.some((item) => +item.cash_out > 0) ?? false,
+                },
                 sorting: [{ id: "created_at", desc: true }],
               }}
               muiTableBodyRowProps={({ row }) => ({
                 sx: { cursor: "pointer" },
                 onClick: () => {
-                  console.log(row.getValue<number>("balance.depot.id"));
                   void router.push({
                     pathname: "/depots/[depotId]/transactions/[txnId]",
                     query: {

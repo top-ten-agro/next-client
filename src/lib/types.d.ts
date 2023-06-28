@@ -88,7 +88,7 @@ export type Order = {
   items: Array<{ product: number; quantity: number; rate: string }>;
   created_at: string;
   updated_at: string;
-  created_by: Prettify<Pick<User, "id" | "email">>;
+  created_by: Prettify<Pick<User, "id" | "email">> & { get_full_name: string };
 };
 
 export type Transaction = Prettify<{
@@ -101,7 +101,7 @@ export type Transaction = Prettify<{
   approved: boolean;
   depot: number;
   balance: { id: number; customer: Prettify<Pick<Customer, "id" | "name">> };
-  created_by: Pick<User, "id" | "email">;
+  created_by: Pick<User, "id" | "email"> & { get_full_name: string };
   created_at: string;
   updated_at: string;
 }>;

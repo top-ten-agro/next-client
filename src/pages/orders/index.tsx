@@ -37,27 +37,9 @@ const OrdersStatement = () => {
 
     return data;
   });
-  const sumTotal = useMemo(() => {
-    return orders?.reduce((acc, crr) => acc + Number(crr.total), 0) ?? 0;
-  }, [orders]);
+
   const columns = useMemo<MRT_ColumnDef<DepotOrder>[]>(
     () => [
-      { accessorKey: "id", header: "#" },
-      { accessorKey: "balance.depot.name", header: "Depot" },
-      { accessorKey: "balance.customer.name", header: "Customer" },
-      { accessorKey: "created_by.email", header: "Officer" },
-      {
-        accessorKey: "total",
-        header: "Total",
-        muiTableHeadCellProps: { align: "right" },
-        muiTableBodyCellProps: { align: "right" },
-        Cell: ({ cell }) => toBdt(+cell.getValue<string>(), { decimal: 0 }),
-        Footer: () => (
-          <Typography fontWeight="bold" textAlign="right">
-            {toBdt(sumTotal, { decimal: 0 })}
-          </Typography>
-        ),
-      },
       {
         accessorKey: "created_at",
         header: "Created At",
@@ -65,8 +47,32 @@ const OrdersStatement = () => {
         enableGlobalFilter: false,
         Cell: ({ cell }) => dayjs(cell.getValue<string>()).format("DD/MM/YYYY"),
       },
+      { accessorKey: "id", header: "ID" },
+      { accessorKey: "balance.depot.name", header: "Depot" },
+      { accessorKey: "balance.customer.name", header: "Customer" },
+      { accessorKey: "created_by.get_full_name", header: "Officer" },
+      {
+        accessorKey: "total",
+        header: "Total",
+        muiTableHeadCellProps: { align: "right" },
+        muiTableBodyCellProps: { align: "right" },
+        Cell: ({ cell }) => toBdt(+cell.getValue<string>(), { decimal: 0 }),
+        Footer: ({ table }) => {
+          const total = table
+            .getFilteredRowModel()
+            .rows.reduce(
+              (acc, row) => acc + parseFloat(row.getValue<string>("total")),
+              0
+            );
+          return (
+            <Typography fontWeight="bold" textAlign="right">
+              {toBdt(total, { decimal: 0 })}
+            </Typography>
+          );
+        },
+      },
     ],
-    [sumTotal]
+    []
   );
 
   return (
