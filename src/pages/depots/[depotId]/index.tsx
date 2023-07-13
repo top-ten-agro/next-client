@@ -76,11 +76,7 @@ const DepotPage = () => {
             <Grid xs={12}>
               <ListItem>
                 <ListItemText
-                  primary={
-                    session
-                      ? `${session?.user.first_name} ${session?.user.last_name}`
-                      : "User"
-                  }
+                  primary={session ? `${session?.user.name}` : "User"}
                   secondary={role?.role.toLowerCase() ?? "user role"}
                 ></ListItemText>
               </ListItem>

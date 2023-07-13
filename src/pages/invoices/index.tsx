@@ -49,7 +49,7 @@ const OrdersStatement = () => {
       { accessorKey: "id", header: "ID" },
       { accessorKey: "balance.depot.name", header: "Depot" },
       { accessorKey: "balance.customer.name", header: "Customer" },
-      { accessorKey: "created_by.get_full_name", header: "Officer" },
+      { accessorKey: "created_by.name", header: "Officer" },
       {
         accessorKey: "total",
         header: "Total",

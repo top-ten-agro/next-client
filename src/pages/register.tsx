@@ -24,8 +24,7 @@ import type { User } from "next-auth";
 
 const schema = z
   .object({
-    first_name: z.string({ required_error: "First Name is required." }).max(30),
-    last_name: z.string({ required_error: "Last Name is required." }).max(30),
+    name: z.string({ required_error: "First Name is required." }).max(32),
     email: z
       .string({ required_error: "Email is required." })
       .email("Invalid email format"),
@@ -52,8 +51,7 @@ const RegisterUser: NextPageWithLayout = () => {
     resolver: zodResolver(schema),
     defaultValues: {
       email: "",
-      first_name: "",
-      last_name: "",
+      name: "",
       phone: "",
       password: "",
       confirm: "",
@@ -112,30 +110,16 @@ const RegisterUser: NextPageWithLayout = () => {
               sx={{ mb: 1 }}
             >
               <Grid container spacing={2}>
-                <Grid xs={12} sm={6}>
+                <Grid xs={12}>
                   <Controller
                     control={control}
-                    name="first_name"
+                    name="name"
                     render={({ field }) => (
                       <TextField
                         {...field}
-                        label="First Name"
-                        helperText={formState.errors.first_name?.message}
-                        error={!!formState.errors.first_name}
-                      />
-                    )}
-                  />
-                </Grid>
-                <Grid xs={12} sm={6}>
-                  <Controller
-                    control={control}
-                    name="last_name"
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Last Name"
-                        helperText={formState.errors.last_name?.message}
-                        error={!!formState.errors.last_name}
+                        label="Full Name"
+                        helperText={formState.errors.name?.message}
+                        error={!!formState.errors.name}
                       />
                     )}
                   />

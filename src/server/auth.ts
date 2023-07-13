@@ -13,8 +13,7 @@ type TokenObject = {
   exp: number;
   user_id: number;
   email: string;
-  first_name: string;
-  last_name: string;
+  name: string;
 };
 type TokenResponse = {
   refresh: string;
@@ -29,15 +28,13 @@ declare module "next-auth" {
     user: {
       id: number;
       email: string;
-      first_name: string;
-      last_name: string;
+      name: string;
     };
   }
   interface User {
     id: number;
     email: string;
-    first_name: string;
-    last_name: string;
+    name: string;
     accessToken: string;
     refreshToken: string;
   }
@@ -50,8 +47,7 @@ export const authOptions: NextAuthOptions = {
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
         token.email = user.email;
-        token.first_name = user.first_name;
-        token.last_name = user.last_name;
+        token.name = user.name;
         token.id = user.id;
       }
 
@@ -75,8 +71,7 @@ export const authOptions: NextAuthOptions = {
       session.user = {
         id: token.id as number,
         email: token.email as string,
-        first_name: token.first_name as string,
-        last_name: token.last_name as string,
+        name: token.name as string,
       };
       session.accessToken = token.accessToken as string;
       session.refreshToken = token.refreshToken as string;
@@ -105,14 +100,12 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
           const data = (await res.json()) as TokenResponse;
-          const { user_id, email, first_name, last_name } =
-            jwtDecode<TokenObject>(data.access);
+          const { user_id, email, name } = jwtDecode<TokenObject>(data.access);
 
           return {
             id: user_id,
             email,
-            first_name,
-            last_name,
+            name,
             accessToken: data.access,
             refreshToken: data.refresh,
           };

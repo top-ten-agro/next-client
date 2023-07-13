@@ -47,7 +47,7 @@ const TransactionsStatement = () => {
       { accessorKey: "id", header: "ID", size: 100 },
       { accessorKey: "title", header: "Title" },
       { accessorKey: "depot.name", header: "Depot" },
-      { accessorKey: "created_by.get_full_name", header: "Officer" },
+      { accessorKey: "created_by.name", header: "Officer" },
       {
         accessorKey: "balance.customer.name",
         header: "Customer",

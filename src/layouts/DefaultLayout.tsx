@@ -165,7 +165,7 @@ const AppDrawer = ({
                 <AccountCircleIcon />
               </ListItemIcon>
               <ListItemText
-                primary={session?.user.first_name}
+                primary={session?.user.name}
                 secondary={session?.user.email}
               />
             </ListItemButton>

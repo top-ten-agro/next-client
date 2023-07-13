@@ -65,7 +65,7 @@ const OrdersTable = () => {
   const role = useRole((state) => state.role);
   const [count, setCount] = useState(0);
   const [visibility, setVisibility] = useState<MRT_VisibilityState>({
-    "created_by.get_full_name": false,
+    "created_by.name": false,
     "balance.customer.id": false,
     subtotal: false,
   });
@@ -85,10 +85,10 @@ const OrdersTable = () => {
     if (role?.role === "OFFICER") {
       return setVisibility((prev) => ({
         ...prev,
-        "created_by.get_full_name": false,
+        "created_by.name": false,
       }));
     }
-    setVisibility((prev) => ({ ...prev, "created_by.get_full_name": true }));
+    setVisibility((prev) => ({ ...prev, "created_by.name": true }));
   }, [role?.role]);
 
   const { data, isLoading, isError, isFetching } = useQuery(
@@ -155,7 +155,7 @@ const OrdersTable = () => {
         enableSorting: false,
       },
       {
-        accessorKey: "created_by.get_full_name",
+        accessorKey: "created_by.name",
         header: "Officer",
       },
       {
