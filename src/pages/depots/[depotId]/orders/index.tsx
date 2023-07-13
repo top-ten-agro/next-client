@@ -65,14 +65,14 @@ const OrdersTable = () => {
   const role = useRole((state) => state.role);
   const [count, setCount] = useState(0);
   const [visibility, setVisibility] = useState<MRT_VisibilityState>({
-    "created_by.email": false,
+    "created_by.get_full_name": false,
     "balance.customer.id": false,
     subtotal: false,
   });
 
-  const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>(
-    []
-  );
+  const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([
+    { id: "approved", value: "false" },
+  ]);
   const [sorting, setSorting] = useState<MRT_SortingState>([
     { id: "created_at", desc: true },
   ]);
@@ -83,9 +83,12 @@ const OrdersTable = () => {
 
   useEffect(() => {
     if (role?.role === "OFFICER") {
-      return setVisibility((prev) => ({ ...prev, "created_by.email": false }));
+      return setVisibility((prev) => ({
+        ...prev,
+        "created_by.get_full_name": false,
+      }));
     }
-    setVisibility((prev) => ({ ...prev, "created_by.email": true }));
+    setVisibility((prev) => ({ ...prev, "created_by.get_full_name": true }));
   }, [role?.role]);
 
   const { data, isLoading, isError, isFetching } = useQuery(
@@ -152,7 +155,7 @@ const OrdersTable = () => {
         enableSorting: false,
       },
       {
-        accessorKey: "created_by.email",
+        accessorKey: "created_by.get_full_name",
         header: "Officer",
       },
       {
@@ -166,7 +169,7 @@ const OrdersTable = () => {
           ),
         muiTableHeadCellProps: { align: "center" },
         muiTableBodyCellProps: { align: "center", sx: { p: 0 } },
-        enableColumnFilter: false,
+        filterVariant: "checkbox",
       },
       {
         accessorKey: "subtotal",
@@ -218,6 +221,8 @@ const OrdersTable = () => {
           onSortingChange={setSorting}
           onColumnVisibilityChange={setVisibility}
           rowCount={count}
+          defaultColumn={{ enableGlobalFilter: false }}
+          initialState={{ density: "compact" }}
           state={{
             columnFilters,
             isLoading,
@@ -246,10 +251,15 @@ const OrdersTable = () => {
                 }
               : undefined
           }
-          defaultColumn={{
-            enableGlobalFilter: false,
-          }}
-          initialState={{ density: "compact" }}
+          renderEmptyRowsFallback={() => (
+            <Box sx={{ textAlign: "center", py: 4 }}>
+              {columnFilters.some(
+                (item) => item.id === "approved" && item.value === "false"
+              )
+                ? "No new order found."
+                : "No order found."}
+            </Box>
+          )}
         />
       </Box>
     </Box>
