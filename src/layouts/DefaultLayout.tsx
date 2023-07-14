@@ -16,6 +16,7 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import DepotContext from "@/components/DepotContext";
@@ -99,13 +100,16 @@ export const DefaultLayout = ({ children }: { children: ReactNode }) => {
   if (!isEmployee) {
     return (
       <Box sx={{ height: "100vh", display: "grid", placeItems: "center" }}>
-        <Card sx={{ p: 4 }}>
-          <Typography variant="h5" textAlign="center" gutterBottom>
+        <Card sx={{ p: 4, textAlign: "center" }}>
+          <Typography variant="h5" gutterBottom>
             You are not authorized to access this page
           </Typography>
-          <Typography variant="body1" textAlign="center" gutterBottom>
+          <Typography variant="body1" gutterBottom>
             Please contact your administrator
           </Typography>
+          <Button component={NextLink} href="/api/auth/signout" sx={{ mt: 4 }}>
+            Sign Out
+          </Button>
         </Card>
       </Box>
     );
