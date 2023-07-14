@@ -46,16 +46,21 @@ const TransactionsStatement = () => {
       },
       { accessorKey: "id", header: "ID", size: 100 },
       { accessorKey: "title", header: "Title" },
-      { accessorKey: "depot.name", header: "Depot" },
-      { accessorKey: "created_by.name", header: "Officer" },
+
       {
         accessorKey: "balance.customer.name",
         header: "Customer",
         Cell: ({ cell }) => cell.getValue<string>() ?? "-",
       },
       {
+        accessorKey: "balance.customer.address",
+        header: "Address",
+        Cell: ({ cell }) => cell.getValue<string>() ?? "-",
+      },
+
+      {
         accessorKey: "cash_in",
-        header: "Cash In",
+        header: "Recovery",
         muiTableHeadCellProps: { align: "right" },
         muiTableBodyCellProps: { align: "right" },
         Cell: ({ cell }) => toBdt(+cell.getValue<string>(), { decimal: 0 }),
@@ -94,6 +99,8 @@ const TransactionsStatement = () => {
           );
         },
       },
+      { accessorKey: "created_by.name", header: "Officer" },
+      { accessorKey: "depot.name", header: "Depot" },
     ],
     []
   );
@@ -141,6 +148,7 @@ const TransactionsStatement = () => {
                 density: "compact",
                 columnVisibility: {
                   title: false,
+                  "depot.name": false,
                   cash_out:
                     transactions?.some((item) => +item.cash_out > 0) ?? false,
                 },

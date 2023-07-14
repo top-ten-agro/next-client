@@ -15,9 +15,9 @@ import type { MRT_ColumnDef } from "material-react-table";
 import { toBdt } from "@/lib/formatter";
 
 type DepotOrder = Order & {
-  balance: Order["balance"] & { depot: { id: string; name: string } };
+  balance: Order["balance"] & { depot: { id: number; name: string } };
 };
-type DepotTransaction = Transaction & { depot: { id: string; name: string } };
+type DepotTransaction = Transaction & { depot: { id: number; name: string } };
 
 const Customers = () => {
   const router = useRouter();
@@ -53,7 +53,13 @@ const Customers = () => {
     if (!orders || !transactions) return [];
     const balance: Record<
       number,
-      DepotOrder["balance"] & { in: number; out: number }
+      {
+        id: number;
+        customer: { id: number; name: string };
+        depot: { id: number; name: string };
+        in: number;
+        out: number;
+      }
     > = {};
 
     orders.forEach((order) => {
@@ -62,7 +68,12 @@ const Customers = () => {
         item.out += +order.total;
       }
       balance[order.balance.id] = {
-        ...order.balance,
+        id: order.balance.id,
+        customer: {
+          id: order.balance.customer.id,
+          name: order.balance.customer.name,
+        },
+        depot: order.balance.depot,
         in: 0,
         out: +order.total,
       };
@@ -198,10 +209,10 @@ const Customers = () => {
                   onClick: () => {
                     console.log(row.getValue<number>("balance.depot.id"));
                     void router.push({
-                      pathname: "/depots/[depotId]/orders/[orderId]",
+                      pathname: "/depots/[depotId]/customers/[balanceId]",
                       query: {
                         depotId: row.original.depot.id,
-                        orderId: row.getValue<number>("id"),
+                        balanceId: row.original.id,
                       },
                     });
                   },

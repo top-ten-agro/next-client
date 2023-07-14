@@ -163,7 +163,7 @@ const CustomerPage = () => {
                           {roles
                             ? roles.map((item) => (
                                 <option key={item.id} value={item.id}>
-                                  {item.user.email}
+                                  {item.user.name}
                                 </option>
                               ))
                             : null}
@@ -190,7 +190,7 @@ const CustomerPage = () => {
                       <ListItemIcon sx={{ minWidth: 40 }}>
                         <EngineeringIcon />
                       </ListItemIcon>
-                      <ListItemText>{balance.officer?.user.email}</ListItemText>
+                      <ListItemText>{balance.officer?.user.name}</ListItemText>
                     </ListItem>
                   )}
                 </List>

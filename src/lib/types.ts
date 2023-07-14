@@ -105,7 +105,10 @@ export type Transaction = Prettify<{
   note: string | null;
   approved: boolean;
   depot: number;
-  balance: { id: number; customer: Prettify<Pick<Customer, "id" | "name">> };
+  balance: {
+    id: number;
+    customer: Prettify<Pick<Customer, "id" | "name" | "address">>;
+  };
   created_by: Pick<User, "id" | "email"> & { name: string };
   created_at: string;
   updated_at: string;

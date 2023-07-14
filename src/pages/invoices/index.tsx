@@ -47,9 +47,9 @@ const OrdersStatement = () => {
         Cell: ({ cell }) => dayjs(cell.getValue<string>()).format("DD/MM/YYYY"),
       },
       { accessorKey: "id", header: "ID" },
-      { accessorKey: "balance.depot.name", header: "Depot" },
       { accessorKey: "balance.customer.name", header: "Customer" },
-      { accessorKey: "created_by.name", header: "Officer" },
+      { accessorKey: "balance.customer.address", header: "Address" },
+
       {
         accessorKey: "total",
         header: "Total",
@@ -70,6 +70,8 @@ const OrdersStatement = () => {
           );
         },
       },
+      { accessorKey: "created_by.name", header: "Officer" },
+      { accessorKey: "balance.depot.name", header: "Depot" },
     ],
     []
   );
@@ -116,6 +118,7 @@ const OrdersStatement = () => {
               initialState={{
                 density: "compact",
                 sorting: [{ id: "created_at", desc: true }],
+                columnVisibility: { "balance.depot.name": false },
               }}
               muiTableBodyRowProps={({ row }) => ({
                 sx: { cursor: "pointer" },
@@ -124,7 +127,6 @@ const OrdersStatement = () => {
                   void router.push({
                     pathname: "/invoices/[orderId]",
                     query: {
-                      depotId: row.original.balance.depot.id,
                       orderId: row.getValue<number>("id"),
                     },
                   });

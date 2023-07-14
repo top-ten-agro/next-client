@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import NextLink from "next/link";
 import { signOut, useSession } from "next-auth/react";
+import { useQuery } from "@tanstack/react-query";
 import { styled } from "@mui/material/styles";
 import Drawer from "@mui/material/Drawer";
 import Divider from "@mui/material/Divider";
@@ -18,6 +19,7 @@ import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import DepotContext from "@/components/DepotContext";
+// import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import type { Dispatch, SetStateAction, ReactNode } from "react";
 
 //icons
@@ -31,6 +33,8 @@ import PeopleIcon from "@mui/icons-material/People";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/Logout";
 import CloseIcon from "@mui/icons-material/Close";
+import { Card } from "@mui/material";
+import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 
 const DrawerHeader = styled("div")(({ theme }) => ({
   display: "flex",
@@ -55,6 +59,7 @@ const drawerWidth = 240;
 export const DefaultLayout = ({ children }: { children: ReactNode }) => {
   const { data: session, status } = useSession({ required: true });
   const router = useRouter();
+  const axios = useAxiosAuth();
   const isDesktop = useMediaQuery("(min-width:1280px)");
   const [isOpen, setIsOpen] = useState(false);
 
@@ -69,10 +74,39 @@ export const DefaultLayout = ({ children }: { children: ReactNode }) => {
     }
   }, [router.asPath, isDesktop]);
 
-  if (status === "loading") {
+  const { data: isEmployee, isLoading } = useQuery(
+    ["isEmployee", session?.user.id],
+    async () => {
+      const res = await axios.get<{ is_employee: boolean }>(
+        `api/depots/is_employee`
+      );
+      return res.data.is_employee;
+    },
+    {
+      enabled: status === "authenticated",
+      refetchOnWindowFocus: false,
+    }
+  );
+
+  if (status === "loading" || isLoading) {
     return (
       <Box sx={{ height: "100vh", display: "grid", placeItems: "center" }}>
         <CircularProgress size={60} />
+      </Box>
+    );
+  }
+
+  if (!isEmployee) {
+    return (
+      <Box sx={{ height: "100vh", display: "grid", placeItems: "center" }}>
+        <Card sx={{ p: 4 }}>
+          <Typography variant="h5" textAlign="center" gutterBottom>
+            You are not authorized to access this page
+          </Typography>
+          <Typography variant="body1" textAlign="center" gutterBottom>
+            Please contact your administrator
+          </Typography>
+        </Card>
       </Box>
     );
   }
