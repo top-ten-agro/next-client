@@ -42,7 +42,8 @@ const Products = () => {
     () =>
       products?.map((product) => ({
         ...product,
-        total: statements?.find((item) => item.product === product.id)?.total,
+        total:
+          statements?.find((item) => item.product === product.id)?.total ?? 0,
       })),
     [products, statements]
   );
@@ -58,6 +59,7 @@ const Products = () => {
         muiTableHeadCellProps: { align: "center" },
         muiTableBodyCellProps: { align: "center" },
         Cell: ({ cell }) => cell.getValue<string>() ?? "0",
+        filterVariant: "range",
       },
       {
         accessorKey: "price",
@@ -65,6 +67,7 @@ const Products = () => {
         muiTableHeadCellProps: { align: "right" },
         muiTableBodyCellProps: { align: "right" },
         Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
+        filterVariant: "range",
       },
     ],
     []
