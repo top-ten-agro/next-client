@@ -231,7 +231,7 @@ const OrderPage = () => {
                 <ListItem>
                   <ListItemText
                     primary={"Created by"}
-                    secondary={order?.created_by.email}
+                    secondary={order?.created_by.name}
                   />
                 </ListItem>
                 <ListItem>

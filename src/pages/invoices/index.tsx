@@ -1,5 +1,5 @@
-import { useRouter } from "next/router";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import Head from "next/head";
 import dayjs from "dayjs";
 import Container from "@mui/material/Container";
@@ -122,7 +122,7 @@ const OrdersStatement = () => {
                 onClick: () => {
                   console.log(row.getValue<number>("balance.depot.id"));
                   void router.push({
-                    pathname: "/depots/[depotId]/orders/[orderId]",
+                    pathname: "/invoices/[orderId]",
                     query: {
                       depotId: row.original.balance.depot.id,
                       orderId: row.getValue<number>("id"),

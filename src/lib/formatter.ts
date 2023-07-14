@@ -1,8 +1,15 @@
-export function toBdt(number: number, { decimal } = { decimal: 2 }): string {
-  const formatter = new Intl.NumberFormat("en-BD", {
-    style: "currency",
+type Props = {
+  decimal?: number;
+  style?: "currency" | "decimal" | "percent" | "unit";
+  locale?: "en-US" | "bn-BD";
+};
+
+export function toBdt(number: number, props?: Props): string {
+  const formatter = new Intl.NumberFormat(props?.locale ?? "en-US", {
+    style: props?.style ?? "currency",
     currency: "BDT",
-    minimumFractionDigits: decimal,
+    minimumFractionDigits: props?.decimal ?? 2,
+    maximumFractionDigits: props?.decimal ?? 2,
     currencyDisplay: "narrowSymbol",
   });
 

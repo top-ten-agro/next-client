@@ -411,7 +411,7 @@ const TransactionPage = () => {
                 <ListItem>
                   <ListItemText
                     primary={"Created by"}
-                    secondary={transaction.created_by.email}
+                    secondary={transaction.created_by.name}
                   />
                 </ListItem>
                 <ListItem>

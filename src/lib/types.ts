@@ -84,7 +84,12 @@ export type Order = {
   total: string;
   commission: string;
   approved: boolean;
-  balance: { id: number; customer: Prettify<Pick<Customer, "id" | "name">> };
+  balance: {
+    id: number;
+    customer: Prettify<Pick<Customer, "id" | "name" | "address">>;
+    cash_in: string;
+    sales: string;
+  };
   items: Array<{ product: number; quantity: number; rate: string }>;
   created_at: string;
   updated_at: string;
@@ -118,6 +123,10 @@ export type HomepageData = {
     total_cash_out: number;
   }>;
 };
+
+export interface Invoice extends Order {
+  items: Array<Order["items"][0] & { product: Product }>;
+}
 
 type Prettify<T> = {
   [K in keyof T]: T[K];

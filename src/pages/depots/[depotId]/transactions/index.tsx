@@ -86,9 +86,9 @@ const TransactionsTable = () => {
     "balance.customer.id": false,
   });
 
-  const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>(
-    []
-  );
+  const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([
+    { id: "approved", value: "false" },
+  ]);
   const [sorting, setSorting] = useState<MRT_SortingState>([
     { id: "created_at", desc: true },
   ]);
@@ -96,12 +96,6 @@ const TransactionsTable = () => {
     pageIndex: 0,
     pageSize: 10,
   });
-  useEffect(() => {
-    if (role?.role === "OFFICER") {
-      return setVisibility((prev) => ({ ...prev, "created_by.email": false }));
-    }
-    setVisibility((prev) => ({ ...prev, "created_by.email": true }));
-  }, [role?.role]);
 
   const { data, isLoading, isError, isFetching } = useQuery(
     [
@@ -150,7 +144,6 @@ const TransactionsTable = () => {
       onSuccess: (data) => setCount(data.count),
     }
   );
-
   const columns = useMemo<MRT_ColumnDef<Transaction>[]>(
     () => [
       { accessorKey: "id", header: "ID", enableSorting: false, size: 100 },
@@ -191,12 +184,12 @@ const TransactionsTable = () => {
           ),
         muiTableHeadCellProps: { align: "center" },
         muiTableBodyCellProps: { align: "center", sx: { p: 0 } },
-        enableColumnFilter: false,
+        filterVariant: "checkbox",
         size: 100,
       },
       {
         accessorKey: "cash_in",
-        header: "In",
+        header: "Cash In",
         enableColumnFilter: false,
         Cell: ({ cell }) =>
           +cell.getValue<string>() > 0 ? toBdt(+cell.getValue<string>()) : "-",
@@ -205,7 +198,7 @@ const TransactionsTable = () => {
       },
       {
         accessorKey: "cash_out",
-        header: "Out",
+        header: "Cash Out",
         enableColumnFilter: false,
         Cell: ({ cell }) =>
           +cell.getValue<string>() > 0 ? toBdt(+cell.getValue<string>()) : "-",
@@ -225,6 +218,20 @@ const TransactionsTable = () => {
     ],
     []
   );
+
+  useEffect(() => {
+    setVisibility((prev) => ({
+      ...prev,
+      "created_by.email": role?.role === "OFFICER" ? false : true,
+    }));
+  }, [role?.role]);
+  useEffect(() => {
+    setVisibility((prev) => ({
+      ...prev,
+      cash_out: data?.results.some((item) => +item.cash_out > 0) ?? false,
+    }));
+  }, [data?.results]);
+
   return (
     <Box sx={{ position: "relative" }}>
       <Box
