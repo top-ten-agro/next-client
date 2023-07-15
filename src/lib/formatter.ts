@@ -2,6 +2,7 @@ type Props = {
   decimal?: number;
   style?: "currency" | "decimal" | "percent" | "unit";
   locale?: "en-US" | "bn-BD";
+  notation?: "compact" | "standard";
 };
 
 export function toBdt(number: number, props?: Props): string {
@@ -11,6 +12,7 @@ export function toBdt(number: number, props?: Props): string {
     minimumFractionDigits: props?.decimal ?? 2,
     maximumFractionDigits: props?.decimal ?? 2,
     currencyDisplay: "narrowSymbol",
+    notation: props?.notation,
   });
 
   return formatter.format(number);

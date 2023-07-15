@@ -2,6 +2,16 @@ import { useMemo, useState } from "react";
 import Head from "next/head";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from "recharts";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Unstable_Grid2";
@@ -17,6 +27,8 @@ import ShoppingCartCheckoutIcon from "@mui/icons-material/ShoppingCartCheckout";
 import PeopleIcon from "@mui/icons-material/People";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import PageToolbar from "@/components/PageToolbar";
+import dayjs from "dayjs";
+import { toBdt } from "@/lib/formatter";
 import type { HomepageData } from "@/lib/types";
 
 const Home = () => {
@@ -109,17 +121,12 @@ const Home = () => {
               <ToggleButton value={15}>15 days</ToggleButton>
               <ToggleButton value={30}>30 days</ToggleButton>
             </ToggleButtonGroup>
-            <Box sx={{ position: "relative", mt: 1 }}>
-              <Box
-                sx={{
-                  position: "absolute",
-                  overflowX: "auto",
-                  overflowY: "hidden",
-                  insetInline: 0,
-                }}
-              >
-                <InfoChart data={dataPoints.slice().reverse()} />
-              </Box>
+            <Box sx={{ mt: 1 }} />
+            <Box sx={{ display: { sm: "none" } }}>
+              <InfoChart data={dataPoints.slice().reverse()} aspect={1.5} />
+            </Box>
+            <Box sx={{ display: { xs: "none", sm: "block" } }}>
+              <InfoChart data={dataPoints.slice().reverse()} aspect={3} />
             </Box>
           </Box>
         ) : null}
@@ -162,52 +169,51 @@ function InfoCard({
   );
 }
 
-import {
-  LineChart,
-  Line,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-} from "recharts";
-import dayjs from "dayjs";
-import { toBdt } from "@/lib/formatter";
-
 const InfoChart = ({
   data,
+  aspect,
 }: {
   data: Array<{
     date: string;
     recovery: number;
     sales: number;
   }>;
+  aspect: number;
 }) => (
-  <LineChart
-    width={960}
-    height={380}
-    data={data}
-    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-  >
-    <CartesianGrid strokeDasharray="3 3" />
-    <XAxis dataKey="date" />
-    <YAxis tickFormatter={(val) => toBdt(val as number, { decimal: 0 })} />
-    <Tooltip />
-    <Legend />
-    <Line
-      type="monotone"
-      dataKey="recovery"
-      label="Recovery"
-      stroke="#8884d8"
-      animationDuration={200}
-    />
+  <ResponsiveContainer width={"99%"} aspect={aspect}>
+    <LineChart
+      data={data}
+      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+      style={{ minWidth: 300 }}
+    >
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis dataKey="date" fontSize={12} />
+      <YAxis
+        tickFormatter={(val) =>
+          toBdt(val as number, { decimal: 0, notation: "compact" })
+        }
+        fontSize={12}
+        width={25}
+      />
+      <Tooltip />
+      <Legend />
+      <Line
+        type="monotone"
+        dataKey="recovery"
+        label="Recovery"
+        stroke="#8884d8"
+        animationDuration={200}
+        isAnimationActive={false}
+      />
 
-    <Line
-      type="monotone"
-      dataKey="sales"
-      label="Sales"
-      stroke="#82ca9d"
-      animationDuration={200}
-    />
-  </LineChart>
+      <Line
+        type="monotone"
+        dataKey="sales"
+        label="Sales"
+        stroke="#82ca9d"
+        animationDuration={200}
+        isAnimationActive={false}
+      />
+    </LineChart>
+  </ResponsiveContainer>
 );
