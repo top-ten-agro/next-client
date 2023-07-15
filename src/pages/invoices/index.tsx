@@ -60,8 +60,9 @@ const OrdersStatement = () => {
       {
         accessorKey: "total",
         header: "Total",
-        muiTableHeadCellProps: { align: "right" },
-        muiTableBodyCellProps: { align: "right" },
+        muiTableHeadCellProps: { sx: { pr: 3 }, align: "right" },
+        muiTableBodyCellProps: { sx: { pr: 3 }, align: "right" },
+        muiTableFooterCellProps: { sx: { pr: 3 } },
         Cell: ({ cell }) => toBdt(+cell.getValue<string>(), { decimal: 0 }),
         Footer: ({ table }) => {
           const total = table

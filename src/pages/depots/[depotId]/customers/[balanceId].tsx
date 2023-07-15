@@ -186,7 +186,7 @@ const CustomerPage = () => {
                       </ListItemText>
                     </ListItem>
                   ) : (
-                    <ListItem>
+                    <ListItem sx={{ pb: 0 }}>
                       <ListItemIcon sx={{ minWidth: 40 }}>
                         <EngineeringIcon />
                       </ListItemIcon>
@@ -196,7 +196,14 @@ const CustomerPage = () => {
                 </List>
               </Grid>
               <Grid xs={12} md={6}>
-                <BalanceTable balance={balance} />
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: { xs: "center", md: "end" },
+                  }}
+                >
+                  <BalanceTable balance={balance} />
+                </Box>
               </Grid>
             </Grid>
 
@@ -316,9 +323,20 @@ const OrdersTable = () => {
 
   const columns = useMemo<MRT_ColumnDef<Order>[]>(
     () => [
-      { accessorKey: "id", header: "ID", enableSorting: false },
       {
-        accessorKey: "created_by.email",
+        accessorKey: "id",
+        header: "ID",
+        enableSorting: false,
+        enableColumnActions: false,
+      },
+      {
+        accessorKey: "created_at",
+        header: "Date",
+        enableColumnFilter: false,
+        Cell: ({ cell }) => dayjs(cell.getValue<string>()).format("DD/MM/YYYY"),
+      },
+      {
+        accessorKey: "created_by.name",
         header: "Officer",
       },
       {
@@ -349,13 +367,6 @@ const OrdersTable = () => {
         Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
         muiTableHeadCellProps: { align: "right" },
         muiTableBodyCellProps: { align: "right" },
-      },
-      {
-        accessorKey: "created_at",
-        header: "Created At",
-        enableColumnFilter: false,
-        Cell: ({ cell }) =>
-          dayjs(cell.getValue<string>()).format("DD/MM/YYYY HH:mm A"),
       },
     ],
     []
@@ -484,8 +495,21 @@ const TransactionsTable = () => {
 
   const columns = useMemo<MRT_ColumnDef<Transaction>[]>(
     () => [
-      { accessorKey: "id", header: "ID", enableSorting: false, size: 100 },
+      {
+        accessorKey: "id",
+        header: "ID",
+        enableSorting: false,
+        size: 100,
+        enableColumnActions: false,
+      },
+      {
+        accessorKey: "created_at",
+        header: "Date",
+        enableColumnFilter: false,
+        Cell: ({ cell }) => dayjs(cell.getValue<string>()).format("DD/MM/YYYY"),
+      },
       { accessorKey: "title", header: "Title" },
+      { accessorKey: "created_by.name", header: "Officer" },
       {
         accessorKey: "approved",
         header: "Approved",
@@ -501,7 +525,7 @@ const TransactionsTable = () => {
       },
       {
         accessorKey: "cash_in",
-        header: "In",
+        header: "Recovery",
         enableColumnFilter: false,
         Cell: ({ cell }) =>
           +cell.getValue<string>() > 0 ? toBdt(+cell.getValue<string>()) : "-",
@@ -516,14 +540,6 @@ const TransactionsTable = () => {
           +cell.getValue<string>() > 0 ? toBdt(+cell.getValue<string>()) : "-",
         muiTableHeadCellProps: { align: "right" },
         muiTableBodyCellProps: { align: "right" },
-      },
-
-      {
-        accessorKey: "created_at",
-        header: "Created At",
-        enableColumnFilter: false,
-        Cell: ({ cell }) =>
-          dayjs(cell.getValue<string>()).format("DD/MM/YYYY HH:mm A"),
       },
     ],
     []
@@ -581,7 +597,7 @@ const TransactionsTable = () => {
           }}
           initialState={{
             density: "compact",
-            columnVisibility: { "customer.id": false },
+            columnVisibility: { "customer.id": false, cash_out: false },
           }}
         />
       </Box>

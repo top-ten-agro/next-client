@@ -159,7 +159,10 @@ const CustomersTable = () => {
           defaultColumn={{
             enableGlobalFilter: false,
           }}
-          initialState={{ density: "compact", columnVisibility: { id: false } }}
+          initialState={{
+            density: "compact",
+            columnVisibility: { "customer.id": false },
+          }}
         />
       </Box>
     </Box>
@@ -174,7 +177,8 @@ const columns: MRT_ColumnDef<CustomerBalance>[] = [
   },
   {
     accessorKey: "id",
-    header: "Balance ID",
+    header: "ID",
+    size: 40,
   },
   {
     accessorKey: "customer.name",
@@ -182,9 +186,17 @@ const columns: MRT_ColumnDef<CustomerBalance>[] = [
     enableSorting: false,
   },
   {
+    accessorKey: "customer.address",
+    header: "Address",
+    enableSorting: false,
+    enableColumnFilter: false,
+    enableGlobalFilter: false,
+  },
+  {
     accessorKey: "customer.phone",
     header: "Phone",
     enableSorting: false,
+    size: 120,
   },
   {
     accessorKey: "sales",
@@ -193,13 +205,24 @@ const columns: MRT_ColumnDef<CustomerBalance>[] = [
     Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
     muiTableHeadCellProps: { align: "right" },
     muiTableBodyCellProps: { align: "right" },
+    size: 120,
   },
   {
     accessorKey: "cash_in",
-    header: "Cash In",
+    header: "Recovery",
     enableColumnFilter: false,
     Cell: ({ cell }) => toBdt(+cell.getValue<string>()),
     muiTableHeadCellProps: { align: "right" },
     muiTableBodyCellProps: { align: "right" },
+    size: 120,
+  },
+  {
+    header: "Due",
+    enableColumnFilter: false,
+    Cell: ({ row }) =>
+      toBdt(+row.getValue<string>("sales") - +row.getValue<string>("cash_in")),
+    muiTableHeadCellProps: { align: "right" },
+    muiTableBodyCellProps: { align: "right" },
+    size: 120,
   },
 ];

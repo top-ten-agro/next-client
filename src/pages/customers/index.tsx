@@ -32,8 +32,14 @@ const Customers = () => {
     isLoading: orderLoading,
     isError: orderError,
   } = useQuery(["order-statement", startDate, endDate], async () => {
+    const searchParams = new URLSearchParams({
+      omit: "items",
+      expand: "balance.customer,balance.depot,created_by",
+      from: startDate,
+      to: endDate,
+    });
     const { data } = await axios.get<DepotOrder[]>(
-      `api/orders/statement/?omit=items&expand=balance.customer,balance.depot,created_by&from=${startDate}&to=${endDate}`
+      `api/orders/statement/?${searchParams.toString()}`
     );
 
     return data;
@@ -43,8 +49,13 @@ const Customers = () => {
     isLoading: txnLoading,
     isError: txnError,
   } = useQuery(["trx-statement", startDate, endDate], async () => {
+    const searchParams = new URLSearchParams({
+      expand: "balance.customer,depot,created_by",
+      from: startDate,
+      to: endDate,
+    });
     const { data } = await axios.get<DepotTransaction[]>(
-      `api/transactions/statement/?omit=items&expand=balance.customer,depot,created_by&from=${startDate}&to=${endDate}`
+      `api/transactions/statement/?${searchParams.toString()}`
     );
     return data;
   });
@@ -55,7 +66,7 @@ const Customers = () => {
       number,
       {
         id: number;
-        customer: { id: number; name: string };
+        customer: DepotOrder["balance"]["customer"];
         depot: { id: number; name: string };
         in: number;
         out: number;
@@ -69,10 +80,7 @@ const Customers = () => {
       }
       balance[order.balance.id] = {
         id: order.balance.id,
-        customer: {
-          id: order.balance.customer.id,
-          name: order.balance.customer.name,
-        },
+        customer: order.balance.customer,
         depot: order.balance.depot,
         in: 0,
         out: +order.total,
@@ -92,13 +100,20 @@ const Customers = () => {
         out: +txn.cash_out,
       };
     });
+    console.log(balance);
     return Object.values(balance);
   }, [orders, transactions]);
   const columns = useMemo<MRT_ColumnDef<(typeof balances)[0]>[]>(
     () => [
-      { accessorKey: "id", header: "ID" },
-      { accessorKey: "depot.name", header: "Depot" },
+      {
+        accessorKey: "id",
+        header: "#",
+        size: 40,
+        enableColumnActions: false,
+      },
       { accessorKey: "customer.name", header: "Customer" },
+      { accessorKey: "customer.address", header: "Address" },
+      { accessorKey: "depot.name", header: "Depot" },
       {
         accessorKey: "out",
         header: "Sales",
@@ -203,6 +218,7 @@ const Customers = () => {
                 initialState={{
                   density: "compact",
                   sorting: [{ id: "id", desc: false }],
+                  columnVisibility: { "depot.name": false },
                 }}
                 muiTableBodyRowProps={({ row }) => ({
                   sx: { cursor: "pointer" },

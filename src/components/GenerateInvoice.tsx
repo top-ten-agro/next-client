@@ -4,6 +4,7 @@ import Button from "@mui/material/Button";
 import dayjs from "dayjs";
 import "dayjs/locale/bn-bd";
 import LocalizedFormat from "dayjs/plugin/localizedFormat";
+import { logoUri } from "@/assets/logo.mjs";
 
 dayjs.extend(LocalizedFormat);
 
@@ -44,15 +45,21 @@ function generatePdf(invoice: Invoice, subtotal: number) {
           .products-table th { background-color: #f5f5f5; }
           .invoice-info { display: grid; grid-template-columns: 1fr 1fr; padding: 10px; }
           .print-btn { padding:10px 20px; }
+          .cancel-btn { padding:10px 20px; }
+          .actions { display: flex; justify-content: center; padding: 10px; gap: 10px; }
           @media print {
-            .print-btn { display: none; }
+            .actions { display: none; } 
           }
         </style>
       </head>
       <body>
+        <div class="actions">
+          <button onclick="window.print();" class="print-btn">Print Invoice</button>
+          <button onclick="window.close();" class="cancel-btn">Go Back</button>
+        </div>
         <div class="container">
           <div class="header">
-            <img class="logo" src="/logo.jpg" alt="Company Logo" />
+            <img class="logo" src="${logoUri}" alt="Company Logo" />
             <div class="company-info">
               <h2 class="company-name">টপ টেন এগ্রো কেমিক্যালস</h2>
               <p>৪২/১ সেগুন বাগিচা, ঢাকা-১০০০</p>
@@ -135,20 +142,19 @@ function generatePdf(invoice: Invoice, subtotal: number) {
                 +invoice.commission > 0
                   ? `
               <tr>
-                <td colspan="5" style="text-align: right">কমিশন (${toBdt(
-                  +invoice.commission,
+                <td colspan="5" style="text-align: right">${toBdt(
+                  +invoice.commission / 100,
                   {
-                    decimal: 0,
+                    decimal: 1,
                     locale: "bn-BD",
                     style: "percent",
                   }
-                )}) ঃ</td>
+                )} কমিশনঃ </td>
                 <td style="text-align: right">${toBdt(
                   -(+invoice.commission / 100) * subtotal,
                   {
                     decimal: 0,
                     locale: "bn-BD",
-                    style: "percent",
                   }
                 )}</td>
               </tr>
@@ -159,7 +165,6 @@ function generatePdf(invoice: Invoice, subtotal: number) {
                   {
                     decimal: 0,
                     locale: "bn-BD",
-                    style: "percent",
                   }
                 )}</td>
               </tr>`
@@ -198,7 +203,6 @@ function generatePdf(invoice: Invoice, subtotal: number) {
               </tr>
             </table>
           </div>
-          <button onclick="window.print();" class="print-btn">Print Invoice</button>
         </div>
       </body>
     </html>    
