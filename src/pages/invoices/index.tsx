@@ -40,13 +40,20 @@ const OrdersStatement = () => {
   const columns = useMemo<MRT_ColumnDef<DepotOrder>[]>(
     () => [
       {
+        accessorKey: "id",
+        header: "#",
+        size: 40,
+        enableColumnActions: false,
+      },
+      {
         accessorKey: "created_at",
         header: "Created At",
         enableColumnFilter: false,
         enableGlobalFilter: false,
         Cell: ({ cell }) => dayjs(cell.getValue<string>()).format("DD/MM/YYYY"),
+        size: 100,
+        enableColumnActions: false,
       },
-      { accessorKey: "id", header: "ID" },
       { accessorKey: "balance.customer.name", header: "Customer" },
       { accessorKey: "balance.customer.address", header: "Address" },
 

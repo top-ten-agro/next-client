@@ -9,6 +9,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { styled } from "@mui/material/styles";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { type ReactNode } from "react";
 
 type BreadcrumbItem = { name: string; path?: string };
 
@@ -17,9 +18,10 @@ interface Props {
   backHref?: string;
   heading: string;
   action?: {
-    text: React.ReactNode;
+    text: ReactNode;
     href: string;
   };
+  actionElement?: ReactNode;
 }
 
 const Toolbar = styled(MuiToolbar)<ToolbarProps>(() => ({
@@ -27,7 +29,13 @@ const Toolbar = styled(MuiToolbar)<ToolbarProps>(() => ({
   paddingRight: "0 !important",
 }));
 
-const PageToolbar = ({ action, heading, backHref, breadcrumbItems }: Props) => {
+const PageToolbar = ({
+  action,
+  actionElement,
+  heading,
+  backHref,
+  breadcrumbItems,
+}: Props) => {
   return (
     <>
       {breadcrumbItems ? <MuiBreadcrumbs items={breadcrumbItems} /> : null}
@@ -46,7 +54,9 @@ const PageToolbar = ({ action, heading, backHref, breadcrumbItems }: Props) => {
         <Typography variant="h5" sx={{ flexGrow: 1 }}>
           {heading}
         </Typography>
-        {action ? (
+        {actionElement ? (
+          actionElement
+        ) : action ? (
           <Button LinkComponent={NextLink} href={action.href}>
             {action.text}
           </Button>

@@ -75,6 +75,9 @@ const InvoicePage = () => {
             },
             { name: `Invoice #${order?.id ?? ""}` },
           ]}
+          actionElement={
+            order ? <GeneratePdf invoice={order} subtotal={subtotal} /> : null
+          }
         />
 
         {isLoading ? (
@@ -213,14 +216,6 @@ const InvoicePage = () => {
                       </Table>
                     </TableContainer>
                   </Paper>
-                </Box>
-              ) : null}
-
-              {order ? (
-                <Box
-                  sx={{ mt: 2, display: "flex", gap: 2, justifyContent: "end" }}
-                >
-                  <GeneratePdf invoice={order} subtotal={subtotal} />
                 </Box>
               ) : null}
             </Grid>

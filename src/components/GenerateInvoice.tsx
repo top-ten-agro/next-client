@@ -22,7 +22,7 @@ const GenerateInvoice = ({
 export default GenerateInvoice;
 
 function generatePdf(invoice: Invoice, subtotal: number) {
-  const printWindow = window.open("", "", "height=1200,width=800");
+  const printWindow = window.open("", "_blank");
   if (!printWindow) return;
   printWindow?.document.write(`
   <!DOCTYPE html>
@@ -31,9 +31,9 @@ function generatePdf(invoice: Invoice, subtotal: number) {
         <meta charset="UTF-8" />
         <title>Invoice#${invoice.id}</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+          body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
           * { margin: 0; padding: 0; }
-          .container { width: 800px; margin-inline: auto; }
+          .container { width: 800px; margin-inline: auto; padding: 20px; background: #fff; }
           .header { margin-bottom: 20px; width: 450px; margin-inline: auto; }
           .header h1 { font-size: xx-large; }
           .header p { font-size: small; }
@@ -43,6 +43,10 @@ function generatePdf(invoice: Invoice, subtotal: number) {
           .summary-table th, .summary-table td, .products-table th, .products-table td { padding: 5px; text-align: left; border-bottom: 1px solid #ddd; }
           .products-table th { background-color: #f5f5f5; }
           .invoice-info { display: grid; grid-template-columns: 1fr 1fr; padding: 10px; }
+          .print-btn { padding:10px 20px; }
+          @media print {
+            .print-btn { display: none; }
+          }
         </style>
       </head>
       <body>
@@ -89,8 +93,8 @@ function generatePdf(invoice: Invoice, subtotal: number) {
                 <th>পন্যের নাম</th>
                 <th>প্যাক সাইজ</th>
                 <th>কার্টন</th>
-                <th>মূল্য</th>
-                <th>মোট মূল্য</th>
+                <th style="text-align: right">মূল্য</th>
+                <th style="text-align: right">মোট মূল্য</th>
               </tr>
             </thead>
             <tbody>
@@ -194,11 +198,11 @@ function generatePdf(invoice: Invoice, subtotal: number) {
               </tr>
             </table>
           </div>
+          <button onclick="window.print();" class="print-btn">Print Invoice</button>
         </div>
       </body>
     </html>    
     `);
   printWindow.document.close();
   printWindow.print();
-  printWindow.onafterprint = () => printWindow.close();
 }
