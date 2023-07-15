@@ -87,12 +87,12 @@ const OrdersStatement = () => {
   return (
     <>
       <Head>
-        <title>Orders Statement | Top Ten</title>
+        <title>Invoices Statement | Top Ten</title>
       </Head>
       <Container sx={{ mt: 2 }}>
         <PageToolbar
-          heading="Orders Statement"
-          breadcrumbItems={[{ name: "Orders Statement" }]}
+          heading="Invoices Statement"
+          breadcrumbItems={[{ name: "Invoices Statement" }]}
         />
         <Box sx={{ display: "flex", gap: 2, maxWidth: 480 }}>
           <TextField
