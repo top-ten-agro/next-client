@@ -32,23 +32,44 @@ function generatePdf(invoice: Invoice, subtotal: number) {
         <meta charset="UTF-8" />
         <title>Invoice#${invoice.id}</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
+          body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; height:100%; }
           * { margin: 0; padding: 0; }
-          .container { width: 800px; margin-inline: auto; padding: 20px; background: #fff; }
-          .header { margin-bottom: 20px; width: 450px; margin-inline: auto; }
+          .container { width: 800px; height:100%; margin-inline: auto; padding: 20px; background: #fff; position: relative; }
+          .header { margin-top: 10px; width: 450px; margin-inline: auto; position:absolute; top:0; left:0; right:0; }
           .header h1 { font-size: xx-large; }
           .header p { font-size: small; }
           .logo { display: inline-block; vertical-align: middle; max-width: 100px; margin-right: 10px; }
           .company-info { display: inline-block; vertical-align: middle; }
           .products-table, .summary-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-          .summary-table th, .summary-table td, .products-table th, .products-table td { padding: 5px; text-align: left; border-bottom: 1px solid #ddd; }
+          .products-table th, .products-table td { padding: 5px; text-align: left; border-bottom: 1px solid #ddd; }
+          .summary-table th, .summary-table td { padding: 5px; text-align: left; }
           .products-table th { background-color: #f5f5f5; }
           .invoice-info { display: grid; grid-template-columns: 1fr 1fr; padding: 10px; }
           .print-btn { padding:10px 20px; }
           .cancel-btn { padding:10px 20px; }
           .actions { display: flex; justify-content: center; padding: 10px; gap: 10px; }
+          .footer { 
+            margin-top: 100px; 
+            display:flex; 
+            justify-content:space-between; 
+            gap:20px; 
+            position:absolute; 
+            bottom:0; 
+            left:0; 
+            right:0 
+          }
+          .footer div { width:15%; text-align: center; border-top:2px solid #000; padding: 10px 20px; }
           @media print {
             .actions { display: none; } 
+            @page {
+              margin-left: 0.5in;
+              margin-right: 0.5in;
+              margin-top: 0;
+              margin-bottom: 0;
+            }
+            .header, .footer {
+              display: fixed;
+            }
           }
         </style>
       </head>
@@ -66,12 +87,13 @@ function generatePdf(invoice: Invoice, subtotal: number) {
               <p>মোবাইলঃ ০১৭৫৭-৮০৬৫৭৫</p>
             </div>
           </div>
+          <div style="height:110px"></div>
           <h2 style="font-size: x-large">ইনভয়েস</h2>
           <hr />
           <div class="invoice-info">
             <div class="customer-info">
               <table border="0">
-                <p>আইডি নংঃ ${invoice.id}</p>
+                <p>ইনভয়েস নংঃ ${invoice.id}</p>
                 <p>তারিখঃ ${dayjs(invoice.created_at).format("DD/MM/YYYY")}</p>
                 <p>অফিসারঃ ${invoice.created_by.name}</p>
               </table>
@@ -172,41 +194,40 @@ function generatePdf(invoice: Invoice, subtotal: number) {
               }
             </tfoot>
           </table>
-          <div style="display: flex; justify-content: end">
-            <table class="summary-table" style="max-width: 320px">
+          <div>
+            <table class="summary-table">
               <tr>
-                <th style="text-align: right">মোট সেলঃ</th>
-                <td style="text-align: right">${toBdt(+invoice.balance.sales, {
+                <td>মোট সেলঃ ${toBdt(+invoice.balance.sales, {
+                  decimal: 0,
+                  locale: "bn-BD",
+                })}</td> 
+                <td>মোট রিকভারিঃ ${toBdt(+invoice.balance.cash_in, {
                   decimal: 0,
                   locale: "bn-BD",
                 })}</td>
-              </tr>
-              <tr>
-                <th style="text-align: right">মোট রিকভারিঃ</th>
-                <td style="text-align: right">${toBdt(
-                  +invoice.balance.cash_in,
-                  {
-                    decimal: 0,
-                    locale: "bn-BD",
-                  }
-                )}</td>
-              </tr>
-              <tr>
-                <th style="text-align: right">মোট বাকিঃ</th>
-                <td style="text-align: right">${toBdt(
+                <td>মোট বকেয়াঃ ${toBdt(
                   +invoice.balance.sales - +invoice.balance.cash_in,
                   {
                     decimal: 0,
                     locale: "bn-BD",
                   }
-                )}</td>
+                )}</td> 
               </tr>
             </table>
+          </div>
+          <div style="height:120px"></div>
+          <div class="footer">
+            <div>ডিপো ইনচার্জ</div> 
+            <div>ড্রাইভার</div> 
+            <div>অফিসার</div> 
+            <div>কাস্টমার</div> 
           </div>
         </div>
       </body>
     </html>    
     `);
   printWindow.document.close();
-  printWindow.print();
+  setTimeout(() => {
+    printWindow.print();
+  }, 500);
 }

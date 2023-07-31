@@ -31,7 +31,7 @@ const InvoicePage = () => {
   const axios = useAxiosAuth();
 
   const { data: order, isLoading } = useQuery({
-    queryKey: ["order", "fetch-order", router.query.orderId],
+    queryKey: ["invoice", router.query.orderId],
     queryFn: async () => {
       if (typeof router.query.orderId !== "string") {
         throw new Error("Order ID not defined.");
@@ -41,7 +41,9 @@ const InvoicePage = () => {
       );
       return data;
     },
-    onSuccess: ({ items, approved, id }) => {
+    onSuccess: (invoice) => {
+      const { id, items, approved } = invoice;
+
       if (!approved) {
         return void router.push(
           `/depots/${router.query.depotId as string}/orders/${id}`
