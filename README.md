@@ -1,4 +1,4 @@
-# Create T3 App
+# Topten Agro Inventroy & Sales Management Nextjs App
 
 This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
 
