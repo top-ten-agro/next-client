@@ -84,7 +84,6 @@ function generatePdf(invoice: Invoice, subtotal: number) {
             <div class="company-info">
               <h2 class="company-name">টপ টেন এগ্রো কেমিক্যালস</h2>
               <p>৪২/১ সেগুন বাগিচা, ঢাকা-১০০০</p>
-              <p>মোবাইলঃ ০১৭৫৭-৮০৬৫৭৫</p>
             </div>
           </div>
           <div style="height:110px"></div>
